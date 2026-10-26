@@ -1,0 +1,1598 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BowlingLabo Live</title>
+<meta name="theme-color" content="#121D25">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=JetBrains+Mono:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{color-scheme:light}
+body{margin:0;font-size:14px}
+
+/* Layout: lab bench in two panels — footage + setup on the left, measurements + lane chart on the right; stacks to one column on phones */
+:root{
+  --bg:#E7EBEE; --surface:#F8FAFB; --sunken:#DEE4E8; --ink:#121D25; --muted:#55636D; --line:#C6CFD5;
+  --accent:#C41E2E; --accent-ink:#FFFFFF; --maple:#DDBB86; --maple-line:rgba(112,74,32,.30); --gutter:#3A4148;
+  --stage:#0B0F12; --good:#22794A; --warn:#A0650F; --bad:#B42318;
+  --f-display:"Archivo","Zen Kaku Gothic New",system-ui,sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1216; --surface:#151C22; --sunken:#0F151A; --ink:#E4EAEE; --muted:#93A1AB; --line:#29343D;
+    --accent:#FF5A66; --accent-ink:#22040A; --maple:#C49D63; --maple-line:rgba(50,30,8,.40); --gutter:#20262C;
+    --stage:#05080A; --good:#4CC384; --warn:#E3A33B; --bad:#FF6B5E; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1216; --surface:#151C22; --sunken:#0F151A; --ink:#E4EAEE; --muted:#93A1AB; --line:#29343D;
+  --accent:#FF5A66; --accent-ink:#22040A; --maple:#C49D63; --maple-line:rgba(50,30,8,.40); --gutter:#20262C;
+  --stage:#05080A; --good:#4CC384; --warn:#E3A33B; --bad:#FF6B5E; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.top{display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:18px;height:32px;flex:none}
+.brand h1{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:clamp(30px,6.5vw,42px);letter-spacing:.01em;line-height:1;margin:0;text-transform:uppercase}
+.lede{color:var(--muted);margin:0;max-width:60ch;font-size:14px;text-wrap:balance}
+.grid{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:980px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h2{font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:20px;margin:0;letter-spacing:.03em}
+h3{font-size:13px;margin:0 0 8px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+.badge{font-size:12px;color:var(--muted);background:var(--sunken);border-radius:999px;padding:2px 10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.actions,.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.text{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.big{width:100%;min-height:52px;font-size:16px;letter-spacing:.08em}
+.btn:disabled,.btn.disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stage{background:var(--stage);border-radius:10px;display:flex;justify-content:center;align-items:center;position:relative;overflow:hidden;padding:6px;min-height:200px}
+#view{display:block;max-width:100%;max-height:62vh;width:auto;height:auto;touch-action:manipulation;border-radius:4px}
+.stage.cal #view{cursor:crosshair}
+.calHint{position:absolute;left:10px;right:10px;top:10px;background:rgba(8,12,16,.86);color:#fff;font-size:13px;font-weight:700;padding:8px 12px;border-radius:8px;text-align:center;pointer-events:none}
+.scrub{display:flex;align-items:center;gap:8px}
+.scrub input{flex:1;min-width:0;accent-color:var(--accent)}
+.icon{font:inherit;font-size:12px;width:40px;height:40px;flex:none;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.icon:disabled{opacity:.45}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:12.5px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:620px){.fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.field small{font-size:11px;color:var(--muted);min-height:1.3em}
+select{font:inherit;font-size:14px;padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-height:40px;width:100%}
+.row select{width:auto;max-width:100%}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:40px}
+.seg button{flex:1;font:inherit;font-size:14px;font-weight:700;padding:0;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-checked="true"]{background:var(--ink);color:var(--surface)}
+.step{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.step-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.step-head b{font-size:15px}
+.hint{margin:0;color:var(--muted);font-size:13px}
+.chip{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 9px;border:1px solid currentColor;white-space:nowrap}
+.chip.ok{color:var(--good)} .chip.ng{color:var(--warn)} .chip.bad{color:var(--bad)} .chip.mut{color:var(--muted)}
+.inline{font-size:12px;color:var(--muted);font-weight:700}
+.progress{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.bar{height:6px;background:var(--sunken);border-radius:3px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+.msg{margin:0;font-size:13px;color:var(--muted);min-height:1.2em}
+.msg.err{color:var(--bad);font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{background:var(--sunken);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .k{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.tile .v{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.tile b{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:clamp(36px,8vw,48px);line-height:1.05;font-variant-numeric:tabular-nums}
+.tile small{font-size:13px;color:var(--muted);font-weight:700}
+.tile .sub{font-size:12px;color:var(--muted);min-height:1.5em;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tile.hero b{color:var(--accent)}
+.laneWrap{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:560px){.laneWrap{grid-template-columns:minmax(0,300px) minmax(0,1fr)}}
+.laneBox{display:flex;justify-content:center;min-width:0}
+.boards{min-width:0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:11px;color:var(--muted);text-align:left;font-weight:700;letter-spacing:.06em;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:9px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+.num{text-align:right}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.board b{font-family:var(--f-display);font-stretch:75%;font-weight:800;font-size:22px;font-variant-numeric:tabular-nums}
+td.board{white-space:nowrap}
+tr.key td{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.est{font-size:10.5px;font-weight:700;color:var(--warn);border:1px solid currentColor;border-radius:999px;padding:0 6px;margin-left:6px;vertical-align:2px}
+.foot{font-size:12px;color:var(--muted);margin:8px 0 0}
+#acf{display:block;width:100%;height:150px}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:700;font-size:14px}
+details p,details ul{color:var(--muted);font-size:13px}
+details ul{margin:8px 0 0;padding-left:1.2em}
+input[type=text]{font:inherit;font-size:14px;padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-height:40px;width:100%}
+.savebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end;border-top:1px solid var(--line);padding-top:14px}
+.savebar .btn{grid-column:1/-1}
+@media(min-width:620px){.savebar{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.3fr) auto}.savebar .btn{grid-column:auto}}
+.savebar .msg{grid-column:1/-1}
+.people{grid-column:1/-1}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.pchip{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer;min-height:38px}
+.pchip[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.pchip small{font-weight:500;opacity:.75;margin-left:6px;font-family:var(--f-mono)}
+.pgrid{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:720px){.pgrid{grid-template-columns:minmax(0,300px) minmax(0,1fr)}}
+.pside{display:flex;flex-direction:column;gap:14px;min-width:0}
+.tiles.small b{font-size:clamp(28px,6vw,36px)}
+.tablewrap{overflow-x:auto}
+.tablewrap table{min-width:540px}
+tbody tr.row{cursor:pointer}
+tr.sel td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.src{display:block;font-size:11px;color:var(--muted);max-width:18em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.del{font:inherit;font-size:12px;border:0;background:transparent;color:var(--muted);cursor:pointer;padding:6px 8px;border-radius:6px;white-space:nowrap}
+.del.armed,.btn.text.armed{color:var(--bad);font-weight:700}
+.game{grid-column:1/-1}
+.fields.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:520px){.fields.g2{grid-template-columns:minmax(0,1fr)}}
+.persons{display:flex;flex-direction:column;gap:14px}
+.pcard{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pcard-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pcard-head select{width:auto;max-width:100%}
+.pcard-head .pnew{width:12em;max-width:100%}
+.seg.mini{min-height:36px}.seg.mini button{padding:0 10px;font-size:13px}
+.ptotal{margin-left:auto;display:flex;align-items:baseline;gap:6px;font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.ptotal small{font-family:var(--f-body);font-size:12px;font-weight:700;color:var(--muted)}
+.pflags{display:flex;flex-wrap:wrap;gap:6px}
+.sheetwrap{overflow-x:auto}
+.sheet{display:grid;grid-template-columns:repeat(9,minmax(44px,1fr)) minmax(66px,1.5fr);border:1.5px solid var(--ink);border-radius:6px;min-width:500px;overflow:hidden}
+.fr{border-right:1px solid var(--line);display:flex;flex-direction:column}.fr:last-child{border-right:0}
+.fn{font-size:11px;color:var(--muted);text-align:center;border-bottom:1px solid var(--line);padding:1px 0;font-family:var(--f-mono)}
+.fn small{margin-left:4px;color:var(--accent);font-weight:700}
+.rolls{display:flex;justify-content:flex-end}
+.roll{font:inherit;font-family:var(--f-mono);font-weight:700;font-size:13px;width:22px;height:24px;border:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line);background:transparent;color:var(--ink);padding:0;display:flex;align-items:center;justify-content:center}
+button.roll{cursor:pointer}
+.roll.low{background:color-mix(in srgb,var(--warn) 24%,transparent)}
+.roll.set{color:var(--accent)}
+.roll.auto{font-style:italic;color:var(--muted);text-decoration:underline dotted}
+.ft{text-align:center;font-family:var(--f-display);font-stretch:75%;font-weight:800;font-size:20px;padding:3px 0;min-height:30px;font-variant-numeric:tabular-nums}
+.gtable{min-width:640px}
+.tsel{min-height:34px;padding:3px 6px;font-size:13px;width:auto}
+td.na{color:var(--muted);font-size:12px;text-align:left}
+.glist{display:flex;flex-wrap:wrap;gap:8px}
+.gchip{display:flex;flex-direction:column;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px 12px;min-width:64px}
+.gchip b{font-family:var(--f-display);font-stretch:75%;font-weight:800;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+.gchip small{font-size:11px;color:var(--muted)}
+.ballform{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px 12px;align-items:end;border:1px solid var(--line);border-radius:12px;padding:12px}
+.ballform canvas{grid-row:span 2;border-radius:50%;background:var(--sunken);width:64px;height:64px}
+.ballform>.row,.ballform>.foot,.ballform>#ballOwnerNewWrap{grid-column:1/-1}
+.balls{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.ballcard{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+.ballcard img{border-radius:50%;flex:none;background:var(--sunken)}
+.bc-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.bc-main b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc-main small{color:var(--muted);font-size:12px}
+.bname{font-size:12px;font-weight:700;white-space:nowrap}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;min-height:40px}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+[hidden]{display:none!important}
+.ordbox{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.ordbox .step-head{flex-wrap:wrap}
+.ordbox.off .ordrows,.ordbox.off #ordSum{opacity:.45;pointer-events:none}
+.ordrows{display:flex;flex-direction:column;gap:6px}
+.ordrow{display:grid;grid-template-columns:24px minmax(0,1fr) auto auto;gap:8px;align-items:center}
+@media(max-width:560px){.ordrow{grid-template-columns:24px minmax(0,1fr)}.ordrow .seg{grid-column:2}}
+.fno{display:block;font-size:11px;color:var(--muted)}
+.ordn{font-family:var(--f-mono);font-weight:700;color:var(--muted);text-align:center}
+.qbox{border:1.5px solid var(--warn);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--warn) 6%,transparent)}
+.qhead{display:flex;flex-direction:column;gap:2px}
+.qrow{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+.qimg{border-radius:6px;background:var(--stage);flex:none;max-width:100%}
+.qmain{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.qwho{font-weight:700}
+.qtxt{font-size:13px;color:var(--muted)}
+.qopts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.qbtn{font:inherit;font-weight:700;font-size:14px;min-height:38px;min-width:52px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.qbtn.guess{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.vhold{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0;pointer-events:none;overflow:hidden}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.live-tag{font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.08em;vertical-align:middle;margin-left:6px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.live-tag.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.live-tag.on::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:1px;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.live-tag.on::before{animation:none}}
+.toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;padding:8px 14px;border-radius:999px;pointer-events:none;white-space:nowrap}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.stat{margin:0;color:var(--muted);min-height:1.2em}
+.laneWrap.one{grid-template-columns:minmax(0,1fr)}
+#view{max-height:70vh}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 20 36" aria-hidden="true"><path fill="var(--ink)" d="M10 1.5c3 0 4.2 3 3.4 6-.5 2-1.7 3.1-1.5 5.2.3 3 4.4 6.2 4.4 12.4 0 6.2-3.1 9.4-6.3 9.4s-6.3-3.2-6.3-9.4c0-6.2 4.1-9.4 4.4-12.4.2-2.1-1-3.2-1.5-5.2C5.8 4.5 7 1.5 10 1.5z"/><rect x="7.4" y="10.6" width="5.2" height="1.4" fill="var(--accent)"/><rect x="7.2" y="13" width="5.6" height="1.4" fill="var(--accent)"/></svg>
+      <h1>BowlingLabo <span class="live-tag" id="liveTag">LIVE</span></h1>
+    </div>
+    <p class="lede">スマホを固定して1ゲーム撮影しながら、投球ごとにボールを計測してスコアを付けます。</p>
+  </header>
+
+  <main class="grid">
+    <section class="panel" aria-labelledby="h-cam">
+      <div class="panel-head"><h2 id="h-cam">カメラ</h2><span class="badge" id="camBadge">停止中</span></div>
+      <div class="stage" id="stage">
+        <canvas id="view" width="640" height="360" aria-label="カメラ映像"></canvas>
+        <div class="calHint" id="calHint" hidden></div>
+        <div class="toast" id="toast" hidden></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="camBtn" type="button">カメラを起動</button>
+        <button class="btn" id="autoBtn" type="button" disabled>自動で位置合わせ</button>
+        <button class="btn" id="calL" type="button" disabled>左レーンの4点</button><span class="chip ng" id="calStateL">未設定</span>
+        <button class="btn" id="calR" type="button" disabled>右レーンの4点</button><span class="chip mut" id="calStateR">未設定</span>
+      </div>
+      <div class="qbox" id="calAsk" hidden><p id="calAskText" style="margin:0"></p>
+        <div class="row"><button class="btn primary" id="calOk" type="button">合っている</button><button class="btn" id="calRedo" type="button">4点で指定し直す</button></div></div>
+      <div class="fields">
+        <div class="field"><label for="fmt">投球方式</label><select id="fmt"><option value="US">アメリカン（交互）</option><option value="EU">ヨーロピアン（同じレーン）</option></select></div>
+        <div class="field"><label for="defHand">わからない人の投げ手</label><select id="defHand"><option value="R">右投げ</option><option value="L">左投げ</option></select></div>
+        <div class="field"><label for="calDist">奥の点の距離</label><select id="calDist"><option value="15">スパット 15 ft</option><option value="40">40 ft</option><option value="60" selected>ピン手前 60 ft</option></select></div>
+        <div class="field"><label for="sens">検出感度</label><select id="sens"><option value="45">高</option><option value="70" selected>標準</option><option value="100">低</option></select></div>
+      </div>
+      <div class="row"><button class="btn" id="ballBtn" type="button" disabled>ボールを登録</button><span class="inline" id="ballCount"></span></div>
+      <div class="ballform" id="ballForm" hidden>
+        <canvas id="ballThumb" width="64" height="64" aria-label="登録するボール"></canvas>
+        <div class="field"><label for="ballName">ボールの名前</label><input type="text" id="ballName" maxlength="40" list="ballNames" placeholder="例：ファントム" autocomplete="off"><datalist id="ballNames"></datalist></div>
+        <div class="field"><label for="ballOwner">持ち主の名前</label><input type="text" id="ballOwner" maxlength="40" list="ownerNames" autocomplete="off"><datalist id="ownerNames"></datalist></div>
+        <div class="row"><button class="btn primary" id="ballSave" type="button">登録する</button><button class="btn text" id="ballCancel" type="button">やめる</button></div>
+        <p class="foot">同じ持ち主・同じ名前で登録すると見本が追加されます。登録したボールはこの端末に保存され、書き出した記録と一緒に読込版へ移せます。</p>
+      </div>
+      <div class="balls" id="ballList"></div>
+      <label class="check"><input type="checkbox" id="recOn" checked> 撮影した映像も録画する（終了後に保存できます）</label>
+      <div class="row">
+        <button class="btn primary big" id="runBtn" type="button" disabled>ゲーム開始</button>
+      </div>
+      <p class="msg" id="msg" role="status">「カメラを起動」を押すと、ペアの左右のレーンの位置を自動で合わせます。</p>
+      <p class="mono stat" id="stat"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-last">
+      <div class="panel-head"><h2 id="h-last">直前の投球</h2><span class="badge" id="lastBadge">まだありません</span></div>
+      <div class="tiles">
+        <div class="tile hero"><span class="k">回転数</span><span class="v"><b id="lRpm">—</b><small>rpm</small></span><span class="sub" id="lRpmSub"></span></div>
+        <div class="tile"><span class="k">初速</span><span class="v"><b id="lSpd">—</b><small>km/h</small></span><span class="sub" id="lSpdSub"></span></div>
+        <div class="tile"><span class="k">スパットの板目</span><span class="v"><b id="lSpat">—</b><small>枚目</small></span><span class="sub" id="lSpatSub"></span></div>
+        <div class="tile"><span class="k">ブレイクポイント</span><span class="v"><b id="lBp">—</b><small>枚目</small></span><span class="sub" id="lBpSub"></span></div>
+      </div>
+      <div class="laneWrap one"><div class="laneBox"><canvas id="lane" aria-label="直前の投球の軌跡"></canvas></div></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-order">
+      <div class="panel-head"><h2 id="h-order">投球順</h2></div>
+      <div class="ordbox" id="ordBox">
+        <div class="step-head"><label class="check"><input type="checkbox" id="ordOn" checked> <b>投球順で割り当てる</b></label>
+          <span class="row"><label class="inline" for="ordCount">人数</label><select id="ordCount"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+          <button class="btn text" id="ordSplit" type="button">半分ずつ左右に分ける</button></span></div>
+        <datalist id="ordNames"></datalist>
+        <div class="ordrows" id="ordRows"></div>
+        <p class="foot" id="ordSum"></p>
+      </div>
+      <p class="foot">投球順を使わないときは、体のフォルム（シルエット）だけで投げた人を見分けます。</p>
+    </section>
+    <section class="panel game" aria-labelledby="h-game">
+      <div class="panel-head"><h2 id="h-game">スコア</h2><span class="badge" id="gameBadge">0投</span></div>
+      <div class="qbox" id="qBox" hidden></div>
+      <div class="persons" id="personList"><p class="hint">投球を検出すると、投げた人ごとのスコア表がここに出ます。投球順と体のフォルムから、投げた人を割り当てます。</p></div>
+      <p class="foot">色の付いたマスは、ピン数の自動判定に自信がない投球です。タップすると投球一覧の修正欄に移動します。</p>
+      <h3>投球一覧</h3>
+      <div class="tablewrap"><table class="gtable">
+        <thead><tr><th class="num">#</th><th>時間</th><th>レーン</th><th>投げた人</th><th>ボール</th><th class="num">倒したピン</th><th class="num">初速</th><th class="num">回転数</th><th class="num">スパット</th><th class="num">BP</th></tr></thead>
+        <tbody id="gThrows"><tr><td colspan="10" style="color:var(--muted)">まだ投球がありません</td></tr></tbody></table></div>
+      <div class="row" id="endRow">
+        <button class="btn" id="exportBtn" type="button" disabled>記録を書き出す（JSON）</button>
+        <button class="btn" id="recBtn" type="button" hidden>録画を保存</button>
+        <button class="btn text" id="resetBtn" type="button">新しいゲーム</button>
+      </div>
+      <p class="foot">書き出したファイルは、claude.ai の BowlingLabo（読込版）の「ライブ版の記録を読み込む」で人物ごとの記録に保存できます。名前を付けた人のフォルムはこの端末に覚えておき、次回から自動で見分けます。</p>
+    </section>
+  </main>
+</div>
+<video id="cam" playsinline muted autoplay class="vhold"></video>
+
+<script>
+/* BowlingLabo core: shared by the upload app and the live camera app.
+   Lane coordinates: u = boards from the left lane edge (0..39), v = feet from the foul line. */
+const BL=(()=>{
+const BOARD_IN=41.5/39,KMH=1.09728,MPH=0.681818,RPM_V0=0,RPM_V1=15,EXT=8;
+
+/* ---------- math ---------- */
+function gauss(A,b){const n=b.length,M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];
+    const d=M[c][c];if(Math.abs(d)<1e-12)return null;for(let k=c;k<=n;k++)M[c][k]/=d;
+    for(let r=0;r<n;r++){if(r===c)continue;const f=M[r][c];if(!f)continue;for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k];}}
+  return M.map(r=>r[n]);}
+function solveH(src,dst){const A=[],b=[];
+  for(let i=0;i<4;i++){const[x,y]=src[i],[X,Y]=dst[i];A.push([x,y,1,0,0,0,-X*x,-X*y]);b.push(X);A.push([0,0,0,x,y,1,-Y*x,-Y*y]);b.push(Y);}
+  const h=gauss(A,b);return h?[...h,1]:null;}
+function applyH(H,x,y){const w=H[6]*x+H[7]*y+H[8];return[(H[0]*x+H[1]*y+H[2])/w,(H[3]*x+H[4]*y+H[5])/w,w];}
+function linfit(xs,ys){const n=xs.length;let sx=0,sy=0,sxx=0,sxy=0;for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxx+=xs[i]*xs[i];sxy+=xs[i]*ys[i];}
+  const d=n*sxx-sx*sx,b=d?(n*sxy-sx*sy)/d:0;return{a:(sy-b*sx)/n,b};}
+function theilSen(xs,ys){const s=[];for(let i=0;i<xs.length;i++)for(let j=i+1;j<xs.length;j++)if(xs[j]!==xs[i])s.push((ys[j]-ys[i])/(xs[j]-xs[i]));
+  if(!s.length)return 0;s.sort((a,b)=>a-b);return s[s.length>>1];}
+function dot(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[s.length>>1];};
+
+/* ---------- geometry ---------- */
+// roi (optional): analyse only a part of the source frame. calN stays normalised to the whole frame.
+function buildGeom(calN,D,AW,AH,roi){
+  const pts=roi?calN.map(([x,y])=>[(x*roi.W-roi.x)/roi.w*AW,(y*roi.H-roi.y)/roi.h*AH]):calN.map(([x,y])=>[x*AW,y*AH]),lane=[[0,0],[39,0],[39,D],[0,D]];
+  const Hl=solveH(lane,pts),Hi=solveH(pts,lane);if(!Hl||!Hi)return null;
+  const sgn=Math.sign(Hi[6]*pts[0][0]+Hi[7]*pts[0][1]+Hi[8]);const idx=[];
+  for(let y=0;y<AH;y++)for(let x=0;x<AW;x++){const X=x+.5,Y=y+.5,w=Hi[6]*X+Hi[7]*Y+Hi[8];if(Math.sign(w)!==sgn)continue;
+    const u=(Hi[0]*X+Hi[1]*Y+Hi[2])/w,v=(Hi[3]*X+Hi[4]*Y+Hi[5])/w;if(u>=-3&&u<=42&&v>=-2.5&&v<=66)idx.push(y*AW+x);}
+  if(idx.length<200)return null;
+  const g={Hl,Hi,sgn,maskIdx:Int32Array.from(idx),AW,AH,D,src:roi?{ox:roi.x,oy:roi.y,sx:roi.w/AW,sy:roi.h/AH}:null};g.pins=pinLayout(g);g.pinPairs=pinPairs(g.pins);return g;
+}
+// auto zoom: the part of the frame the analysis needs (lanes, the ball above them, the bowler at the foul line, the pins),
+// kept at the source resolution unless that exceeds the pixel budget
+function laneROI(cals,W,H,maxPix){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const c of cals){if(!c)continue;const pts=c.pts.map(([x,y])=>[x*W,y*H]),Hl=solveH([[0,0],[39,0],[39,c.D],[0,c.D]],pts);if(!Hl)continue;
+    const add=(x,y)=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);};
+    for(const u of[-6,45])for(const v of[-3,0,20,40,66]){const p=applyH(Hl,u,v);if(p[2]*applyH(Hl,19.5,0)[2]>0)add(p[0],p[1]);}
+    const a=applyH(Hl,0,0),b=applyH(Hl,39,0),lw=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    add(a[0],a[1]-lw*1.85);add(b[0],b[1]-lw*1.85); // bowler's back above the foul line
+    const pin=applyH(Hl,19.5,63),pw=Math.abs(applyH(Hl,24,63)[0]-applyH(Hl,15,63)[0]);add(pin[0],pin[1]-pw*1.6);}
+  if(x1<x0)return null;
+  x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(W,Math.ceil(x1));y1=Math.min(H,Math.ceil(y1));
+  const w=x1-x0,h=y1-y0;if(w<40||h<40)return null;
+  const k=Math.min(1,Math.sqrt((maxPix||600000)/(w*h)));
+  return{x:x0,y:y0,w,h,W,H,AW:Math.max(1,Math.round(w*k)),AH:Math.max(1,Math.round(h*k)),k};
+}
+// analysis pixel -> source pixel
+function toSrc(g,x,y,srcW,srcH){return g.src?[g.src.ox+x*g.src.sx,g.src.oy+y*g.src.sy]:[x*srcW/g.AW,y*srcH/g.AH];}
+function toLane(g,x,y){const w=g.Hi[6]*x+g.Hi[7]*y+g.Hi[8];if(Math.sign(w)!==g.sgn)return null;
+  return[(g.Hi[0]*x+g.Hi[1]*y+g.Hi[2])/w,(g.Hi[3]*x+g.Hi[4]*y+g.Hi[5])/w];}
+function diamAt(g,u,v){const a=applyH(g.Hl,u-4,v),b=applyH(g.Hl,u+4,v);return Math.hypot(b[0]-a[0],b[1]-a[1]);}
+function buffers(g){const N=g.AW*g.AH;return{bin:new Uint8Array(N),er:new Uint8Array(N),stack:new Int32Array(N)};}
+
+/* ---------- ball detection ---------- */
+function findBlobs(d,bg,g,thr,B){
+  const AW=g.AW,AH=g.AH,idx=g.maskIdx,bin=B.bin,er=B.er,stack=B.stack;bin.fill(0);er.fill(0);
+  for(let k=0;k<idx.length;k++){const p=idx[k],o=p<<2;
+    if(Math.abs(d[o]-bg[o])+Math.abs(d[o+1]-bg[o+1])+Math.abs(d[o+2]-bg[o+2])>thr)bin[p]=1;}
+  // 3x3 opening: removes thin outlines (arms, legs, camera-shake edges) so the ball stays a separate blob
+  for(let k=0;k<idx.length;k++){const p=idx[k];if(!bin[p])continue;const y=(p/AW)|0,x=p-y*AW;if(x<1||y<1||x>=AW-1||y>=AH-1)continue;
+    if(bin[p-1]&&bin[p+1]&&bin[p-AW]&&bin[p+AW]&&bin[p-AW-1]&&bin[p-AW+1]&&bin[p+AW-1]&&bin[p+AW+1])er[p]=1;}
+  for(let k=0;k<idx.length;k++){const p=idx[k];const y=(p/AW)|0,x=p-y*AW;if(x<1||y<1||x>=AW-1||y>=AH-1){bin[p]=0;continue;}
+    bin[p]=(er[p]||er[p-1]||er[p+1]||er[p-AW]||er[p+AW]||er[p-AW-1]||er[p-AW+1]||er[p+AW-1]||er[p+AW+1])?1:0;}
+  const out=[];
+  for(let k=0;k<idx.length;k++){const p=idx[k];if(bin[p]!==1)continue;let sp=0;stack[sp++]=p;bin[p]=2;
+    let area=0,x0=1e9,x1=-1,y0=1e9,y1=-1;
+    while(sp){const q=stack[--sp],y=(q/AW)|0,x=q-y*AW;area++;
+      if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      if(x>0&&bin[q-1]===1){bin[q-1]=2;stack[sp++]=q-1;}
+      if(x<AW-1&&bin[q+1]===1){bin[q+1]=2;stack[sp++]=q+1;}
+      if(y>0&&bin[q-AW]===1){bin[q-AW]=2;stack[sp++]=q-AW;}
+      if(y<AH-1&&bin[q+AW]===1){bin[q+AW]=2;stack[sp++]=q+AW;}}
+    if(area>=4)out.push({area,x0,x1,y0,y1});}
+  return out;
+}
+// contact point = top of blob + its width, so a mirror reflection under the ball on a glossy lane is ignored
+function evalBlob(b,g){
+  const w=b.x1-b.x0+1,h=b.y1-b.y0+1,cx=(b.x0+b.x1+1)/2,by=Math.min(b.y1+1,b.y0+w),L=toLane(g,cx,by);if(!L)return null;
+  const[u,v]=L;if(v<-2||v>62||u<-3||u>42)return null;
+  const De=diamAt(g,u,v);if(!(De>=3))return null;
+  if(w<.55*De||w>1.7*De||h<.5*De||h>2.2*De)return null;
+  if(b.area/(Math.PI/4*w*h)<.45)return null;
+  return{u,v,cx,cy:by-w/2,by,w,h};
+}
+const CR=32;const cropIdx=(()=>{const a=[],c=(CR-1)/2,R=CR*.42;for(let y=0;y<CR;y++)for(let x=0;x<CR;x++)if((x-c)**2+(y-c)**2<=R*R)a.push(y*CR+x);return a})();
+let cctx=null;
+function cropVec(el,srcW,srcH,g,c){
+  if(c.w<9||typeof document==='undefined')return null;
+  if(!cctx){const cv=document.createElement('canvas');cv.width=cv.height=CR;cctx=cv.getContext('2d',{willReadFrequently:true});}
+  const sx=g.src?g.src.sx:srcW/g.AW,sy=g.src?g.src.sy:srcH/g.AH,side=c.w,[X,Y]=toSrc(g,c.cx-side/2,c.cy-side/2,srcW,srcH);
+  cctx.clearRect(0,0,CR,CR);cctx.drawImage(el,X,Y,side*sx,side*sy,0,0,CR,CR);
+  const d=cctx.getImageData(0,0,CR,CR).data,gr=new Float32Array(CR*CR),bl=new Float32Array(CR*CR),tmp=new Float32Array(CR*CR),R=4;
+  for(let i=0;i<CR*CR;i++){const o=i*4;gr[i]=.299*d[o]+.587*d[o+1]+.114*d[o+2];}
+  // remove the smooth shading of the sphere so the ball's own pattern (logo, holes, cover swirl) carries the match
+  for(let y=0;y<CR;y++)for(let x=0;x<CR;x++){let s=0,n=0;for(let k=-R;k<=R;k++){const xx=x+k;if(xx>=0&&xx<CR){s+=gr[y*CR+xx];n++;}}tmp[y*CR+x]=s/n;}
+  for(let y=0;y<CR;y++)for(let x=0;x<CR;x++){let s=0,n=0;for(let k=-R;k<=R;k++){const yy=y+k;if(yy>=0&&yy<CR){s+=tmp[yy*CR+x];n++;}}bl[y*CR+x]=s/n;}
+  const v=new Float32Array(cropIdx.length);let m=0;
+  cropIdx.forEach((p,i)=>{v[i]=gr[p]-bl[p];m+=v[i];});m/=v.length;
+  let n=0;for(let i=0;i<v.length;i++){v[i]-=m;n+=v[i]*v[i];}n=Math.sqrt(n)||1;for(let i=0;i<v.length;i++)v[i]/=n;return v;
+}
+function bestChain(cands,dt){
+  const all=[];cands.forEach(cs=>cs.forEach(c=>{c.score=c.q??1;c.prev=null;all.push(c);}));
+  for(let i=0;i<cands.length;i++)for(const c of cands[i])for(let di=1;di<=10;di++){const j=i-di;if(j<0)break;
+    for(const p of cands[j]){const dv=c.v-p.v,sp=dv/(di*dt);if(sp<4||sp>65)continue;if(Math.abs(c.u-p.u)>.6*dv+1)continue;
+      const s=p.score+(c.q??1)-(di-1)*.15;if(s>c.score){c.score=s;c.prev=p;}}}
+  let best=null;for(const c of all)if(!best||c.score>best.score)best=c;
+  const ch=[];for(let c=best;c;c=c.prev)ch.push(c);return ch.reverse();
+}
+
+/* ---------- registered balls: colour signature ---------- */
+// same 28 bins as the bowler signature: 12 hues x 2 saturations + 4 grey levels
+function colorBin(r,g,b){const mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;
+  if(s<.22||mx<40)return 24+Math.min(3,mx>>6);
+  let hu;const c=mx-mn;if(mx===r)hu=((g-b)/c+6)%6;else if(mx===g)hu=(b-r)/c+2;else hu=(r-g)/c+4;
+  return Math.min(11,Math.floor(hu*2))*2+(s>.55?1:0);}
+// histogram of the ball's face; the outer rim and the lower half (reflection, shadow) are left out
+function colorHist(d,W,H,cx,cy,r){
+  const h=new Float32Array(SIG_N);let n=0;const R=r*.78;
+  for(let y=Math.max(0,Math.round(cy-R));y<=Math.min(H-1,Math.round(cy+R*.6));y++)for(let x=Math.max(0,Math.round(cx-R));x<=Math.min(W-1,Math.round(cx+R));x++){
+    if((x-cx)**2+(y-cy)**2>R*R)continue;const o=(y*W+x)<<2;h[colorBin(d[o],d[o+1],d[o+2])]++;n++;}
+  if(n<6)return null;for(let i=0;i<SIG_N;i++)h[i]/=n;return Array.from(h,x=>Math.round(x*1e4)/1e4);
+}
+function histSim(a,b){return sigSim(a,b);}
+function meanHist(list){const v=list.filter(Boolean);if(!v.length)return null;const h=new Array(SIG_N).fill(0);
+  for(const x of v)for(let i=0;i<SIG_N;i++)h[i]+=x[i]/v.length;return h.map(x=>Math.round(x*1e4)/1e4);}
+// best registered ball for a colour; balls: [{id,name,bowlerId,hist}]
+function matchBall(col,balls,min){
+  if(!col||!balls||!balls.length)return null;let best=null,bs=0;
+  for(const b of balls){const s=histSim(col,b.hist);if(s>bs){bs=s;best=b;}}
+  return best&&bs>=(min??.8)?{ball:best,sim:bs}:null;
+}
+// per-bin likelihood of "this colour belongs to one of the registered balls"
+function ballLut(balls){
+  if(!balls||!balls.length)return null;const L=new Float32Array(SIG_N);
+  for(const b of balls){const mx=Math.max(...b.hist)||1;for(let i=0;i<SIG_N;i++)L[i]=Math.max(L[i],b.hist[i]/mx);}
+  return L;
+}
+// a blob that failed the shape test (ball merged with an arm or a leg): keep only ball-coloured pixels and test again
+function refineBlob(b,d,g,B,lut){
+  const W=g.AW;let n=0,x0=1e9,x1=-1,y0=1e9,y1=-1;
+  for(let y=b.y0;y<=b.y1;y++)for(let x=b.x0;x<=b.x1;x++){const p=y*W+x;if(B.bin[p]!==2)continue;const o=p<<2;
+    if(lut[colorBin(d[o],d[o+1],d[o+2])]<.3)continue;n++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+  if(n<8)return null;const c=evalBlob({area:n,x0,x1,y0,y1},g);if(c)c.refined=true;return c;
+}
+// all candidates of one frame, with colour, using the registered balls when there are any
+function frameCands(d,bg,g,thr,B,lut,blobs){
+  const out=[];
+  for(const bl of blobs||findBlobs(d,bg,g,thr,B)){let c=evalBlob(bl,g);
+    if(!c&&lut&&bl.area>=12)c=refineBlob(bl,d,g,B,lut);
+    if(!c)continue;c.col=colorHist(d,g.AW,g.AH,c.cx,c.cy,c.w/2);
+    if(lut&&c.col){let s=0;for(let i=0;i<SIG_N;i++)s+=c.col[i]*lut[i];const k=Math.max(0,Math.min(1,(c.w-6)/10)); // colour of a tiny far-away ball is unreliable
+      c.q=1+k*Math.max(-.4,Math.min(.4,(s-.5)*1.2));}else c.q=1;
+    out.push(c);}
+  return out;
+}
+
+/* ---------- measurements ---------- */
+// colour of the ball over a tracked chain, from the frames where it is large and clear of the bowler
+function chainColor(chain){const a=chain.filter(c=>c.v>=2&&c.v<=40&&c.col);return meanHist((a.length>=3?a:chain).map(c=>c.col));}
+function boardOf(u,hand){const b=hand==='R'?Math.floor(39-u)+1:Math.floor(u)+1;return Math.max(1,Math.min(39,b));}
+function computeResults(raw,hand){
+  const{chain,dt}=raw,P=chain.map(c=>({f:c.f,t:c.f*dt,u:c.u,v:c.v,c}));
+  P.forEach((p,i)=>{let s=0,k=0;for(let j=Math.max(0,i-2);j<=Math.min(P.length-1,i+2);j++){s+=P[j].u;k++;}p.us=s/k;});
+  // release zone (<3 ft) is skipped: the hand, arm and slide leg get mixed into the ball there
+  let sel=P.filter(p=>p.v>=3&&p.v<=25);if(sel.length<4)sel=P.filter(p=>p.v>=0&&p.v<=30);if(sel.length<3)sel=P.slice(0,Math.min(8,P.length));
+  const v0=theilSen(sel.map(p=>p.t),sel.map(p=>p.v));
+  const late=P.filter(p=>p.v>=40),vEnd=late.length>=4?linfit(late.map(p=>p.t),late.map(p=>p.v)).b:null;
+  const first=P[0].v,last=P[P.length-1].v;
+  const uAt=v=>{if(v<first||v>last){const s=v<first?P.slice(0,6):P.slice(-6),f=linfit(s.map(p=>p.v),s.map(p=>p.us));return{u:f.a+f.b*v,est:true};}
+    for(let i=1;i<P.length;i++)if(P[i].v>=v){const a=P[i-1],b=P[i],k=(v-a.v)/((b.v-a.v)||1);return{u:a.us+k*(b.us-a.us),est:false};}
+    return{u:P[P.length-1].us,est:false};};
+  let bi=0;P.forEach((p,i)=>{if(hand==='R'?p.us>P[bi].us:p.us<P[bi].us)bi=i;});
+  const swing=hand==='R'?P[bi].us-P[P.length-1].us:P[P.length-1].us-P[bi].us;
+  const bp=(bi>1&&bi<P.length-2&&swing>=.8)?{v:P[bi].v,u:P[bi].us}:null;
+  // entry angle: last 12 ft, but never across the breakpoint (the turn itself would flatten it)
+  let angle=null;if(last>=45){let s=P.filter(p=>p.v>=last-12);if(bp){const a=s.filter(p=>p.v>=bp.v);if(a.length>=3)s=a;}const f=linfit(s.map(p=>p.v),s.map(p=>p.us));
+    angle={deg:Math.atan(Math.abs(f.b)*BOARD_IN/12)*180/Math.PI,est:last<57};}
+  const rows=[['ファウルライン',0],['ドット',7],['スパット',15],['40 ft',40],['ピン手前',60]];
+  if(bp)rows.push(['ブレイクポイント',bp.v,true]);rows.sort((a,b)=>a[1]-b[1]);
+  const table=rows.map(([name,v,key])=>{const r=uAt(v),out=v<first-EXT||v>last+EXT;return{name,v,u:out?null:r.u,est:r.est,key:!!key,board:out?null:boardOf(r.u,hand)};});
+  return{P,v0,vEnd,uAt,bp,angle,table,first,last,rpm:rpmEst(P.filter(p=>p.v>=RPM_V0&&p.v<=RPM_V1),dt)};
+}
+function rpmEst(P,dt){
+  let items=P.filter(p=>p.c.vec);if(items.length<8)return{fail:'small'};
+  // remove what stays still relative to the camera (lights reflected on the cover, shading), keep what turns with the ball
+  const D=items[0].c.vec.length,mean=new Float32Array(D);for(const p of items)for(let i=0;i<D;i++)mean[i]+=p.c.vec[i]/items.length;
+  const map=new Map(items.map(p=>{const v=new Float32Array(D);let n=0;for(let i=0;i<D;i++){v[i]=p.c.vec[i]-mean[i];n+=v[i]*v[i];}n=Math.sqrt(n)||1;for(let i=0;i<D;i++)v[i]/=n;return[p.f,v];}));
+  const span=items[items.length-1].f-items[0].f;
+  const Lmin=Math.max(2,Math.floor(60/(800*dt))),Lmax=Math.min(Math.ceil(60/(90*dt)),Math.floor(span*.7));
+  if(Lmax<=Lmin+1)return{fail:'short'};
+  const C=new Array(Lmax+2).fill(NaN);
+  const K=new Array(Lmax+2).fill(0);
+  for(let L=1;L<=Lmax+1;L++){let s=0,k=0;for(const p of items){const q=map.get(p.f+L);if(q){s+=dot(map.get(p.f),q);k++;}}K[L]=k;if(k>=3)C[L]=s/k;}
+  const peaks=[];
+  // a peak needs room on both sides and enough frame pairs to be believed
+  for(let L=Math.max(Lmin+1,3);L<=Lmax;L++){const c=C[L];if(isNaN(c)||K[L]<6)continue;const l=C[L-1],r=C[L+1];
+    if((isNaN(l)||c>=l)&&(isNaN(r)||c>=r)){const w=Math.max(2,Math.ceil(L/2));let lm=Infinity,rm=Infinity;
+      for(let j=Math.max(1,L-w);j<L;j++)if(!isNaN(C[j]))lm=Math.min(lm,C[j]);
+      for(let j=L+1;j<=Math.min(C.length-1,L+w);j++)if(!isNaN(C[j]))rm=Math.min(rm,C[j]);
+      const base=Math.max(lm===Infinity?rm:lm,rm===Infinity?lm:rm),prom=c-base;
+      if(prom>.06&&c>.05)peaks.push({L,c,prom});}}
+  if(!peaks.length)return{fail:'nopeak',C,Lmin,Lmax,dt};
+  const top=Math.max(...peaks.map(p=>p.c));let pk=peaks.find(p=>p.c>=top-.07);
+  // a strong peak at half the lag means the pattern really repeats twice as often (avoid reading 2 turns as 1)
+  for(let k=0;k<2;k++){const h=peaks.find(p=>Math.abs(p.L*2-pk.L)<=1.5&&p.c>=pk.c-.12);if(h)pk=h;else break;}
+  let Pp=pk.L;const l=C[pk.L-1],r=C[pk.L+1];
+  if(!isNaN(l)&&!isNaN(r)){const den=l-2*C[pk.L]+r;if(den<0)Pp+=Math.max(-.5,Math.min(.5,.5*(l-r)/den));}
+  // a second peak at twice the lag confirms the period
+  const twice=peaks.some(p=>Math.abs(p.L-2*Pp)<=1.5);
+  if(!twice&&!(pk.c>.3&&pk.prom>.12))return{fail:'nopeak',C,Lmin,Lmax,dt};
+  const conf=(pk.c>.45&&pk.prom>.25)||(twice&&pk.c>.3&&pk.prom>.15)?'高':(pk.c>.25&&pk.prom>.12)||twice?'中':'低';
+  return{rpm:60/(Pp*dt),P:Pp,C,Lmin,Lmax,dt,conf,peak:pk,n:items.length,twice};
+}
+// one compact record per throw, used for saving and for the score sheet
+function summarize(res){
+  const R=res.rpm,spat=res.table.find(t=>t.name==='スパット');
+  return{speedKmh:res.v0>0?Math.round(res.v0*KMH*10)/10:null,endKmh:res.vEnd?Math.round(res.vEnd*KMH*10)/10:null,
+    rpm:R&&R.rpm?Math.round(R.rpm):null,rpmConf:R&&R.rpm?R.conf:null,spatBoard:spat?spat.board:null,
+    bpBoard:res.bp?res.table.find(t=>t.key).board:null,bpFt:res.bp?Math.round(res.bp.v):null,
+    angle:res.angle?Math.round(res.angle.deg*10)/10:null,angleEst:res.angle?res.angle.est:null,
+    first:Math.round(res.first*10)/10,last:Math.round(res.last*10)/10};
+}
+
+/* ---------- pins ---------- */
+// standard rack seen from the bowler: 1 / 2 3 / 4 5 6 / 7 8 9 10
+const PIN_POS=[[1,0,0],[2,-.5,1],[3,.5,1],[4,-1,2],[5,0,2],[6,1,2],[7,-1.5,3],[8,-.5,3],[9,.5,3],[10,1.5,3]];
+// pairs of pins that stand one behind the other in the camera's view (front pin index, back pin index)
+function pinPairs(pins){const out=[];for(const[f,b]of[[1,7],[0,4],[2,8]]){const A=pins[f],B=pins[b];
+    const ov=Math.min(A.x1,B.x1)-Math.max(A.x0,B.x0),w=Math.min(A.x1-A.x0,B.x1-B.x0)+1;if(ov>=w*.5)out.push([f,b]);}return out;}
+function pinLayout(g){
+  return PIN_POS.map(([n,col,row])=>{const u=19.5+col*11.28,v=60+row*.866,P=applyH(g.Hl,u,v),
+    w=Math.abs(applyH(g.Hl,u+2.25,v)[0]-applyH(g.Hl,u-2.25,v)[0]),h=w*3.15;
+    // the pin body between its belly and the neck: the heads are often hidden behind the masking panel above the deck
+    const y0=Math.round(P[1]-h*.62),y1=Math.round(P[1]-h*.18),x0=Math.round(P[0]-w*.28),x1=Math.round(P[0]+w*.28);
+    return{n,u,v,x:P[0],y:P[1],w,h,x0:Math.max(0,x0),x1:Math.min(g.AW-1,x1),y0:Math.max(0,y0),y1:Math.min(g.AH-1,y1)};});
+}
+const PIN_T=[120,150,180,210];
+function readPins(d,g){
+  return g.pins.map(p=>{const cnt=[0,0,0,0];let n=0;
+    for(let y=p.y0;y<=p.y1;y++)for(let x=p.x0;x<=p.x1;x++){const o=(y*g.AW+x)*4,r=d[o],gg=d[o+1],b=d[o+2];n++;
+      const L=.299*r+.587*gg+.114*b,sat=Math.max(r,gg,b)-Math.min(r,gg,b);if(sat>70)continue;
+      for(let i=0;i<4;i++)if(L>=PIN_T[i])cnt[i]++;}
+    return n?cnt.map(c=>c/n):null;});
+}
+// self-calibrating pin reference: over the whole recording each pin spot is seen both with a pin (bright)
+// and without one (swept or knocked down), so the halfway level separates the two whatever is behind the pins
+function pinRef(readings){
+  const R=readings.filter(r=>r.f&&r.f.every(Boolean));if(R.length<12)return null;
+  const q=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(s.length*p))];};
+  let best=null;
+  for(let ti=0;ti<PIN_T.length;ti++){const hi=[],lo=[];let gap=0;
+    for(let i=0;i<10;i++){const v=R.map(r=>r.f[i][ti]);hi.push(q(v,.9));lo.push(q(v,.05));gap+=hi[i]-lo[i];}
+    if(!best||gap>best.gap)best={ti,hi,lo,gap};}
+  return{ti:best.ti,mid:best.hi.map((h,i)=>(h+best.lo[i])/2),ok:best.hi.map((h,i)=>h-best.lo[i]>.15)};
+}
+function pinState(reading,ref){
+  if(!reading||!ref||!reading.f)return null;const standing=[];
+  reading.f.forEach((p,i)=>{if(!p||!ref.ok[i]){standing.push(true);return;}standing.push(p[ref.ti]>=ref.mid[i]);});
+  // a back pin hidden behind a standing front pin cannot be seen either way
+  let amb=0;for(const[f,b]of(ref.pairs||[]))if(standing[f]&&standing[b])amb++;
+  return{standing,count:standing.filter(Boolean).length,amb};
+}
+/* ---------- who is bowling: back-view colour signature ---------- */
+// the bowler stands at the foul line of this lane; the box covers their body above it
+function personBox(g){
+  const a=applyH(g.Hl,-4,-1),b=applyH(g.Hl,43,-1),lw=Math.abs(applyH(g.Hl,39,0)[0]-applyH(g.Hl,0,0)[0]);
+  const yF=applyH(g.Hl,19.5,-1.5)[1],x0=Math.max(0,Math.round(Math.min(a[0],b[0]))),x1=Math.min(g.AW-1,Math.round(Math.max(a[0],b[0])));
+  const y0=Math.max(0,Math.round(yF-lw*1.75)),y1=Math.min(g.AH-1,Math.round(yF));
+  const step=Math.max(1,Math.round(Math.sqrt((x1-x0+1)*(y1-y0+1)/12000)));const idx=[];
+  for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step)idx.push(y*g.AW+x);
+  const mw=Math.floor((x1-x0)/step)+1,mh=Math.floor((y1-y0)/step)+1;
+  // lane columns at the foul line: the bowler delivers inside these, spectators mostly stand outside them
+  const la=applyH(g.Hl,-4,0)[0],lb=applyH(g.Hl,43,0)[0];
+  return{x0,x1,y0,y1,step,mw,mh,lw,ca:Math.floor((Math.min(la,lb)-x0)/step),cb:Math.ceil((Math.max(la,lb)-x0)/step),idx:Int32Array.from(idx)};
+}
+/* ---------- who is bowling: body form (silhouette), not clothing colour ----------
+   [height / lane width, width / height, 6 x 10 occupancy of the silhouette inside its own box] */
+const FORM_GX=6,FORM_GY=10,FORM_N=2+FORM_GX*FORM_GY;
+function formSig(d,bg,box,thr){
+  const{mw,mh}=box,m=new Uint8Array(mw*mh);let any=0;
+  for(let k=0;k<box.idx.length;k++){const o=box.idx[k]<<2;
+    if(Math.abs(d[o]-bg[o])+Math.abs(d[o+1]-bg[o+1])+Math.abs(d[o+2]-bg[o+2])>thr){m[k]=1;any++;}}
+  if(any<40)return null;
+  // largest connected shape standing over the lane's columns
+  const lab=new Int32Array(mw*mh),st=[];let best=null;
+  for(let i=0;i<m.length;i++){if(!m[i]||lab[i])continue;const id=i+1;let n=0,inLane=0,x0=1e9,x1=-1,y0=1e9,y1=-1;st.push(i);lab[i]=id;
+    while(st.length){const q=st.pop(),y=(q/mw)|0,x=q-y*mw;n++;if(x>=box.ca&&x<=box.cb)inLane++;
+      if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      for(const nb of[x>0?q-1:-1,x<mw-1?q+1:-1,y>0?q-mw:-1,y<mh-1?q+mw:-1])if(nb>=0&&m[nb]&&!lab[nb]){lab[nb]=id;st.push(nb);}}
+    if(!best||inLane>best.inLane)best={id,n,inLane,x0,x1,y0,y1};}
+  if(!best||best.inLane<30)return null;
+  const bw=best.x1-best.x0+1,bh=best.y1-best.y0+1;if(bh<6)return null;
+  const v=new Array(FORM_N).fill(0);v[0]=bh*box.step/box.lw;v[1]=bw/bh;
+  const cnt=new Array(FORM_GX*FORM_GY).fill(0),tot=new Array(FORM_GX*FORM_GY).fill(0);
+  for(let y=best.y0;y<=best.y1;y++)for(let x=best.x0;x<=best.x1;x++){const c=Math.min(FORM_GX-1,Math.floor((x-best.x0)/bw*FORM_GX))+FORM_GX*Math.min(FORM_GY-1,Math.floor((y-best.y0)/bh*FORM_GY));
+    tot[c]++;if(lab[y*mw+x]===best.id)cnt[c]++;}
+  for(let i=0;i<cnt.length;i++)v[2+i]=tot[i]?cnt[i]/tot[i]:0;
+  return v.map(x=>Math.round(x*1e3)/1e3);
+}
+function isForm(a){return Array.isArray(a)&&a.length===FORM_N;}
+function formSim(a,b){
+  if(!isForm(a)||!isForm(b))return 0;
+  // the shape of the silhouette carries the person; its size changes with stance and distance, so it counts little
+  let g=0;for(let i=2;i<FORM_N;i++)g+=Math.abs(a[i]-b[i]);g/=FORM_N-2;
+  const dh=Math.abs(a[0]-b[0])/Math.max(.2,(a[0]+b[0])/2);
+  return Math.min(1,Math.exp(-(g+.05*dh-.1)*6));
+}
+const SIG_N=28,FORM_SAME=.5,FORM_KNOWN=.5;
+// 12 hues x 2 saturations for coloured clothing + 4 grey levels; only pixels that differ from the empty approach count
+function personSig(d,bg,box,thr){
+  const h=new Float32Array(SIG_N);let n=0;
+  for(const p of box.idx){const o=p<<2,r=d[o],g=d[o+1],b=d[o+2];
+    if(Math.abs(r-bg[o])+Math.abs(g-bg[o+1])+Math.abs(b-bg[o+2])<=thr)continue;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;
+    if(s<.22||mx<40){h[24+Math.min(3,mx>>6)]++;}
+    else{let hu;const c=mx-mn;if(mx===r)hu=((g-b)/c+6)%6;else if(mx===g)hu=(b-r)/c+2;else hu=(r-g)/c+4;
+      h[Math.min(11,Math.floor(hu*2))*2+(s>.55?1:0)]++;}
+    n++;}
+  if(n<120)return null;for(let i=0;i<SIG_N;i++)h[i]/=n;return Array.from(h,x=>Math.round(x*1e4)/1e4);
+}
+function sigSim(a,b){if(!a||!b)return 0;let s=0;for(let i=0;i<SIG_N;i++)s+=Math.sqrt(a[i]*b[i]);return s;}
+function sigMix(a,na,b){return a.map((x,i)=>Math.round((x*na+b[i])/(na+1)*1e4)/1e4);}
+
+/* ---------- score ---------- */
+// rolls: array of knocked pins (number or null = unknown). Returns frames with marks and running totals.
+function scoreGame(rolls){
+  const frames=[];let i=0;
+  for(let f=0;f<10;f++){
+    const fr={rolls:[],idx:[],marks:[],total:null};
+    if(f<9){
+      if(i>=rolls.length){frames.push(fr);continue;}
+      const a=rolls[i];fr.rolls.push(a);fr.idx.push(i);
+      if(a===10){fr.marks.push('X');i++;}
+      else{fr.marks.push(a===0?'-':a==null?'?':String(a));i++;
+        if(i<rolls.length){const b=rolls[i];fr.rolls.push(b);fr.idx.push(i);fr.marks.push(a!=null&&b!=null&&a+b===10?'/':b===0?'-':b==null?'?':String(b));i++;}}
+    }else{
+      let rack=10,fresh=true;
+      for(let k=0;k<3&&i<rolls.length;k++){
+        if(k===2&&!(fr.rolls[0]===10||(fr.rolls[0]!=null&&fr.rolls[1]!=null&&fr.rolls[0]+fr.rolls[1]===10)))break;
+        const a=rolls[i];fr.rolls.push(a);fr.idx.push(i);i++;
+        let m=a==null?'?':a===0?'-':String(a);
+        if(a!=null){if(fresh&&a===10){m='X';rack=10;fresh=true;}else if(!fresh&&a===rack){m='/';rack=10;fresh=true;}else{rack-=a;fresh=false;if(rack<=0){rack=10;fresh=true;}}}
+        fr.marks.push(m);
+      }
+    }
+    frames.push(fr);
+  }
+  // totals
+  let run=0,ok=true;
+  for(let f=0;f<10;f++){const fr=frames[f];if(!ok||!fr.rolls.length){ok=false;continue;}
+    const s=fr.idx[0];let need,val=null;
+    if(f<9){
+      if(fr.rolls[0]===10)need=[s,s+1,s+2];
+      else if(fr.rolls.length===2&&fr.rolls[0]!=null&&fr.rolls[1]!=null&&fr.rolls[0]+fr.rolls[1]===10)need=[s,s+1,s+2];
+      else need=fr.rolls.length===2?[s,s+1]:null;
+    }else{const n=(fr.rolls[0]===10||(fr.rolls.length>=2&&fr.rolls[0]+fr.rolls[1]===10))?3:2;need=fr.rolls.length>=n?fr.idx.slice(0,n):null;}
+    if(need&&need.every(j=>j<rolls.length&&rolls[j]!=null))val=need.reduce((a,j)=>a+rolls[j],0);
+    if(val==null){ok=false;continue;}run+=val;fr.total=run;}
+  const done=frames[9].total!=null;
+  return{frames,total:done?frames[9].total:null,partial:run};
+}
+// whether roll k (0-based) starts a fresh rack, given the rolls before it
+function rackBefore(rolls,k){
+  let f=0,i=0;
+  while(i<k&&f<9){const a=rolls[i];if(a===10){i++;f++;continue;}i++;if(i===k)return{fresh:false,standing:10-(a??0),frame:f};i++;f++;}
+  if(i===k&&f<9)return{fresh:true,standing:10,frame:f};
+  // tenth frame
+  let rack=10,fresh=true;
+  for(let j=i;j<k;j++){const a=rolls[j]??0;if(fresh&&a===10){rack=10;fresh=true;}else if(!fresh&&a>=rack){rack=10;fresh=true;}else{rack-=a;fresh=false;if(rack<=0){rack=10;fresh=true;}}}
+  return{fresh,standing:fresh?10:rack,frame:9};
+}
+// knocked pins per throw from the pin-deck readings. throws: [{tRelease,tArrive}], readings: [{t,f}]
+function estimatePins(throws,readings){
+  const ref=pinRef(readings,throws.length?throws[0].tRelease-.3:null),rolls=[],info=[];
+  const stateAt=(t0,t1,mode)=>{const r=readings.filter(x=>x.t>=t0&&x.t<=t1).map(x=>pinState(x,ref)).filter(Boolean);
+    if(!r.length)return null;const c=r.map(x=>x.count);const v=mode==='max'?Math.max(...c):median(c);return r.find(x=>x.count===v)||r[0];};
+  for(let k=0;k<throws.length;k++){
+    const rk=rackBefore(rolls,k),th=throws[k],nx=throws[k+1];
+    const A=nx?stateAt(nx.tRelease-1.4,nx.tRelease-.3,'median'):null;
+    const W=stateAt(th.tArrive+1.4,th.tArrive+3,'max');
+    let after=null,conf='low',left=null;
+    if(rk.fresh&&A){after=A.count>=10?0:A.count;conf='mid';left=A.count>=10?[]:A.standing.map((s,i)=>s?i+1:0).filter(Boolean);}
+    else if(W){after=Math.min(W.count,rk.standing);left=W.standing.map((s,i)=>s?i+1:0).filter(Boolean);}
+    const knocked=after==null?null:Math.max(0,Math.min(rk.standing,rk.standing-after));
+    rolls.push(knocked);info.push({conf:ref?conf:'none',left,standingBefore:rk.standing});
+  }
+  return{rolls,info,ref};
+}
+
+/* ---------- bowling order ----------
+   order: [{key,name,lane:'L'|'R',...}] in the order they bowl; people starting on the same lane form a group.
+   American: the groups swap lanes every frame. European: each group stays on its lane. */
+function turnSeq(order,format,lane){
+  const G={L:order.filter(x=>x.lane==='L'),R:order.filter(x=>x.lane==='R')},seq=[];
+  for(let f=0;f<10;f++){const g=format==='EU'?G[lane]:(f%2===0?G[lane]:G[lane==='L'?'R':'L']);for(const b of g)seq.push({key:b.key,f});}
+  return seq;
+}
+// how sure the pins say a first ball was a strike (0..1)
+// how sure the pins say this ball was thrown at a full rack (0..1)
+function pFirst(th){if(!th.B)return .5;return th.B.count>=10?.9:th.B.count>=8&&th.B.amb?.5:.08;}
+function pStrike(th,ov){
+  if(ov!=null)return ov===10?.99:.01;
+  if(th.W&&th.W.count===0)return .85;
+  if(th.A&&th.A.count<10)return .12;
+  if(th.W&&th.W.count>0&&th.W.count<10)return .2;
+  if(th.A&&th.A.count>=10)return .7;
+  return .45;
+}
+// best split of one lane's throws into the lane's turns: who threw each ball and in which frame
+function assignLane(T,seq,o,protos,clock){
+  const n=T.length,K=seq.length;if(!n||!K)return;
+  const fs=(a,b)=>a&&b&&isForm(a)&&isForm(b)?formSim(a,b):null;
+  const W=Object.assign({F:4,S:2.2,S2:1.2,Skip:2.5,P:3},o.weights||{}),wF=W.F,wS=W.S,wSkip=W.Skip,wP=W.P,INF=1e9;
+  const maxB=k=>seq[k].f<9?2:3;
+  const own=(i,k)=>{let c=0;const ov=o.person[T[i].id];if(ov&&ov!==seq[k].key)c+=60;
+    // both lanes move through the frames together, so the time says roughly which frame a ball belongs to
+    if(clock){const fx=(T[i].tRelease-clock.t0)/clock.tf,dv=Math.abs(fx-(seq[k].f+.5));c+=(W.T??1)*Math.max(0,dv-1.2);}
+    // closest of the throws already given to that person (people deliver in more than one way)
+    const pr=protos&&protos[seq[k].key];if(pr&&isForm(T[i].sig)){let m=0;for(const x of pr)if(x.id!==T[i].id)m=Math.max(m,formSim(T[i].sig,x.sig));if(pr.some(x=>x.id!==T[i].id))c+=wP*(1-m);}return c;};
+  // cost[i][k*3+j], back pointers
+  const C=[],B=[];
+  for(let i=0;i<n;i++){C.push(new Float64Array(K*3).fill(INF));B.push(new Int32Array(K*3).fill(-1));}
+  const wB=W.B??2.5,wM=W.M??1.6;
+  for(let k=0;k<Math.min(K,4);k++){C[0][k*3]=k*wSkip+own(0,k)+wB*(1-pFirst(T[0]));
+    if(maxB(k)>1){const c=k*wSkip+wM+wB*pFirst(T[0])+own(0,k);if(c<C[0][k*3+1])C[0][k*3+1]=c;}}
+  for(let i=0;i<n-1;i++){const a=T[i],b=T[i+1],sm=fs(a.sig,b.sig),ps=pStrike(a,o.pins[a.id]);
+    for(let k=0;k<K;k++)for(let j=0;j<3;j++){const c0=C[i][k*3+j];if(c0>=INF)continue;const f=seq[k].f;
+      // same turn, next ball
+      if(j+1<maxB(k)){let c=c0+(sm==null?.5:wF*(1-sm));
+        if(f<9&&j===0)c+=wS*ps;                 // nothing follows a strike
+        if(f===9&&j===1)c+=.8;                  // a third ball needs a mark in the tenth
+        if(!(f===9&&j>=0))c+=wB*pFirst(b);       // a full rack in front of it says it is not a second ball
+        c+=own(i+1,k);const id=k*3+j+1;if(c<C[i+1][id]){C[i+1][id]=c;B[i+1][id]=k*3+j;}}
+      // the next bowler's turn (possibly after turns the camera missed)
+      for(let s2=0;s2<3;s2++){const k2=k+1+s2;if(k2>=K)break;
+        let c=c0+s2*wSkip;
+        if(f<9&&j===0)c+=W.S2*(1-ps);           // a non-strike first ball needs a second ball (unless the camera missed it)
+        if(f===9&&j===0)c+=wS*1.5;
+        if(sm!=null&&seq[k2].key!==seq[k].key)c+=wF*sm*.8;   // a different person should look different
+        c+=own(i+1,k2);
+        {const c1=c+wB*(1-pFirst(b)),id=k2*3;if(c1<C[i+1][id]){C[i+1][id]=c1;B[i+1][id]=k*3+j;}}
+        // the camera missed this person's first ball: the rack in front of this ball is already broken
+        if(maxB(k2)>1){const c2=c+wM+wB*pFirst(b),id=k2*3+1;if(c2<C[i+1][id]){C[i+1][id]=c2;B[i+1][id]=k*3+j;}}}}}
+  let best=-1,bc=INF;for(let id=0;id<K*3;id++)if(C[n-1][id]<bc){bc=C[n-1][id];best=id;}
+  for(let i=n-1;i>=0;i--){const k=Math.floor(best/3),j=best%3;T[i].person=seq[k].key;T[i].frame0=seq[k].f;T[i].ball=j;T[i].turn=k;best=B[i][best];}
+  return null;
+}
+
+/* ---------- one game for everyone on the pair ----------
+   evs: [{id,lane:'L'|'R',tRelease,tArrive,sig}]  readings: {L:[...],R:[...]}
+   opts: {format:'US'|'EU', known:[{id,name,hand,sig}], person:{evId:key}, pins:{evId:n}, names:{key:{bowlerId,name,hand}}} */
+// how much the pin deck moved after the ball got there, against the still picture just before the release.
+// A pin that falls (even one hidden behind another) shakes the boxes around it; when nothing falls the deck stays still.
+function deckMotion(rs,ref,th){
+  if(!rs||!ref||th.tArrive==null)return null;const ti=ref.ti;
+  const base=rs.filter(r=>r.f&&r.t>=th.tRelease-1.6&&r.t<=th.tRelease-.25),win=rs.filter(r=>r.f&&r.t>=th.tArrive-.2&&r.t<=th.tArrive+2);
+  if(base.length<3||win.length<4)return null;
+  let mx=0,sum=0;for(let i=0;i<10;i++){const b=median(base.map(r=>r.f[i]?r.f[i][ti]:0));let m=0;
+    for(const r of win){const d=Math.abs((r.f[i]?r.f[i][ti]:0)-b);if(d>m)m=d;}mx=Math.max(mx,m);sum+=m;}
+  return{max:mx,sum,quiet:mx<.6&&sum<3,busy:mx>.8&&sum>4};
+}
+function buildGame(evs,readings,opts){
+  const o=Object.assign({format:'US',known:[],owners:{},person:{},pins:{},names:{},order:null},opts||{});
+  const byOrder=Array.isArray(o.order)&&o.order.length>0;
+  const ths=evs.slice().sort((a,b)=>a.tRelease-b.tRelease).map(e=>Object.assign({},e));
+  const refs={},firstT={};for(const t of ths)if(firstT[t.lane]==null)firstT[t.lane]=t.tRelease;
+  for(const ln of['L','R']){refs[ln]=readings[ln]&&readings[ln].length?pinRef(readings[ln]):null;
+    if(refs[ln])refs[ln].pairs=(o.pinPairs&&o.pinPairs[ln])||(readings[ln][0]&&readings[ln][0].pp)||[];}
+  const stateAt=(ln,t0,t1,mode)=>{const rs=(readings[ln]||[]).filter(x=>x.t>=t0&&x.t<=t1).map(x=>pinState(x,refs[ln])).filter(Boolean);
+    if(!rs.length)return null;const c=rs.map(x=>x.count),v=mode==='max'?Math.max(...c):median(c);return rs.find(x=>x.count===v)||rs[0];};
+  // pass 1: read each lane in order; a first ball that leaves pins is always followed by the same bowler's second ball
+  for(const ln of['L','R']){const seq=ths.filter(t=>t.lane===ln);let fresh=true;
+    seq.forEach((th,k)=>{const nx=seq[k+1];
+      // A: pins re-spotted and standing before the next ball on this lane (or, at the end, once the machine has settled)
+      th.A=nx?stateAt(ln,Math.max(th.tArrive+4,nx.tRelease-2.5),nx.tRelease-.3,'median'):stateAt(ln,th.tArrive+9,th.tArrive+14,'median');
+      // W: just after impact, before the machine lifts the standing pins (used for second balls)
+      // W: after the pins settle and before the machine sweeps (median skips the sweep bar flashing past)
+      th.W=stateAt(ln,th.tArrive+1.3,th.tArrive+3.3,'median');
+      // B: pins standing just before this ball (a full rack means a first ball)
+      th.B=stateAt(ln,th.tRelease-1.6,th.tRelease-.25,'median');
+      th.D=deckMotion(readings[ln],refs[ln],th);
+      if(fresh){const ov=o.pins[th.id];const strike=ov!=null?ov===10:th.A?th.A.count>=10:th.W?th.W.count===0:false;
+        if(!strike&&nx&&nx.tRelease-th.tRelease<60){nx.secondOf=th.id;fresh=false;}}
+      else fresh=true;});}
+  // pass 2: who threw it. Second balls belong to whoever threw the first ball.
+  const clusters=[];const byId=Object.fromEntries(ths.map(t=>[t.id,t]));
+  if(byOrder){
+    // the order decides who is up; the body form and the pins decide where one turn ends and the next begins
+    let protos=null;
+    // game clock: first to last ball spans about ten frames (the last frame is a little longer)
+    const t0=ths.length?ths[0].tRelease:0,t1=ths.length?ths[ths.length-1].tRelease:0,clock=!o.useClock||ths.length<8?null:{t0:t0-(t1-t0)*.02,tf:Math.max(30,(t1-t0)*1.04/10)};
+    for(let pass=0;pass<3;pass++){
+      for(const ln of['L','R'])assignLane(ths.filter(t=>t.lane===ln),turnSeq(o.order,o.format,ln),o,protos,clock);
+      protos={};for(const b of o.order){const s=ths.filter(t=>t.person===b.key&&isForm(t.sig)).map(t=>({id:t.id,sig:t.sig}));
+        if(isForm(b.sig))s.push({id:'known',sig:b.sig});protos[b.key]=s;}}
+    for(const th of ths){th.cluster=th.person;delete th.secondOf;}
+  }
+  for(const th of ths){if(byOrder||th.secondOf||!isForm(th.sig))continue;let best=null,bs=0;
+    for(const c of clusters){if(o.format==='EU'&&c.lane!==th.lane)continue;const s=formSim(c.sig,th.sig);if(s>bs){bs=s;best=c;}}
+    if(best&&bs>=FORM_SAME){best.sig=sigMix(best.sig,best.n,th.sig);best.n++;th.cluster=best.key;}
+    else{const key='P'+(clusters.length+1);clusters.push({key,sig:th.sig.slice(),n:1,lane:th.lane});th.cluster=key;}}
+  for(const th of ths){if(byOrder||th.secondOf)continue;if(!th.cluster){// no clear view of the bowler: the nearest earlier throw on the same lane
+      const prev=ths.filter(x=>x.lane===th.lane&&x.tRelease<th.tRelease&&x.cluster).pop();th.cluster=prev?prev.cluster:null;}}
+  for(const th of ths)if(th.secondOf)th.cluster=byId[th.secondOf].cluster;
+  // match clusters to people already known by their back view
+  const taken=new Set(),auto={};
+  clusters.map(c=>o.known.map(k=>({c,k,s:formSim(c.sig,k.sig)}))).flat().sort((a,b)=>b.s-a.s).forEach(m=>{
+    if(m.s<FORM_KNOWN||auto[m.c.key]||taken.has(m.k.id))return;auto[m.c.key]=m.k;taken.add(m.k.id);});
+  // a registered ball names its owner outright; a back-view match to a known person joins that person
+  const ownerBy={};for(const k of o.known)ownerBy[k.id]=k;for(const id in o.owners)ownerBy[id]=o.owners[id];
+  for(const th of ths){if(byOrder||th.secondOf)continue;
+    if(th.ballOwner&&ownerBy[th.ballOwner]){th.cluster='K:'+th.ballOwner;th.autoBy='ball';}
+    else if(th.cluster&&auto[th.cluster]){th.autoBy='back';th.cluster='K:'+auto[th.cluster].id;}}
+  for(const th of ths)if(th.secondOf){const f=byId[th.secondOf];th.cluster=f.cluster;th.autoBy=f.autoBy;}
+  const persons={},order=[];
+  if(byOrder)for(const b of o.order){const nm=o.names[b.key];
+    persons[b.key]={key:b.key,label:(nm&&nm.name)||b.name||'',bowlerId:(nm&&nm.bowlerId)||b.bowlerId||null,hand:(nm&&nm.hand)||b.hand||null,auto:false,autoBy:null,
+      sig:null,throws:[],rolls:[],startLane:b.lane};order.push(b.key);}
+  const personOf=th=>{const key=o.person[th.id]||th.cluster||'?';if(!persons[key]){
+      const kp=key.startsWith('K:')?ownerBy[key.slice(2)]:null;
+      const nm=o.names[key]||(kp?{bowlerId:kp.id,name:kp.name,hand:kp.hand}:null);
+      const sigs=ths.filter(t=>t.cluster===key&&t.sig&&!t.secondOf).map(t=>t.sig),c={sig:sigs.length?sigs.slice(1).reduce((a,x,i)=>sigMix(a,i+1,x),sigs[0]):null};
+      persons[key]={key,label:nm&&nm.name?nm.name:key==='?'?'不明':'人物'+String.fromCharCode(64+order.length+1),bowlerId:nm?nm.bowlerId||null:null,
+        hand:nm&&nm.hand?nm.hand:null,auto:!!(kp&&!o.names[key]),autoBy:null,sig:c.sig,throws:[],rolls:[]};order.push(key);}
+    return persons[key];};
+  if(byOrder)for(const k of order){const s=ths.filter(t=>t.person===k&&isForm(t.sig)).map(t=>t.sig);persons[k].sig=s.length?s.slice(1).reduce((a,x,i)=>sigMix(a,i+1,x),s[0]):null;}
+  const questions=[];
+  if(byOrder){scoreByOrder(ths,order,persons,o,refs,questions);
+    const list=order.map(k=>persons[k]);
+    for(const p of list){p.score=scoreGame(p.rolls);const fl=[];p.throws.forEach(t=>{if(fl[t.frame]==null)fl[t.frame]=t.lane;});
+      p.laneWarn=o.format==='US'?fl.some((l,i)=>i>0&&l&&fl[i-1]&&l===fl[i-1]):new Set(fl.filter(Boolean)).size>1;}
+    return{persons:list,throws:ths,clusters,questions};}
+  // pass 3: pins per person, racks follow each person's own frames (10th frame included)
+  // order mode: each person's balls in frame order (the two lanes keep their own clocks)
+  const seqd=byOrder?ths.slice().sort((x,y)=>(x.frame0-y.frame0)||(x.ball-y.ball)||(x.tRelease-y.tRelease)):ths;
+  for(const th of seqd){const p=personOf(th);th.person=p.key;if(p.auto&&!p.autoBy&&th.autoBy)p.autoBy=th.autoBy;if(th.autoBy==='ball')p.autoBy='ball';
+    let rk=rackBefore(p.rolls,p.rolls.length);
+    // order mode: frames the camera missed are kept as unknown balls so later frames stay in place
+    if(th.frame0!=null){let guard=0;
+      while(guard++<30&&(rk.frame<th.frame0||(th.ball>0&&rk.fresh&&rk.frame===th.frame0&&th.frame0<9))){p.rolls.push(null);rk=rackBefore(p.rolls,p.rolls.length);}}
+    let knocked=null,conf='low';
+    if(o.pins[th.id]!=null){knocked=Math.min(rk.standing,o.pins[th.id]);conf='set';}
+    else{let after=null;
+      const alone=th.frame0!=null&&th.frame0<9&&th.ball===0&&!ths.some(x=>x!==th&&x.person===th.person&&x.frame0===th.frame0);
+      if(rk.fresh&&alone&&!(th.A&&th.A.count<10)){after=0;conf=th.A?'mid':'low';} // the only ball of a turn: a strike
+      else if(rk.fresh&&th.A){after=th.A.count>=10?0:th.A.count;conf='mid';}
+      else if(th.W)after=Math.min(th.W.count,rk.standing);
+      if(after!=null)knocked=Math.max(0,rk.standing-after);
+      if(!refs[th.lane])conf='none';}
+    th.knocked=knocked;th.conf=conf;th.standingBefore=rk.standing;th.frame=rk.frame;th.rollIndex=p.rolls.length;
+    p.rolls.push(knocked);p.throws.push(th);}
+  const list=order.map(k=>persons[k]);
+  for(const p of list){p.score=scoreGame(p.rolls);
+    // American: frames alternate lanes. European: the whole game on one lane.
+    const fl=[];p.throws.forEach(t=>{if(fl[t.frame]==null)fl[t.frame]=t.lane;});
+    p.laneWarn=o.format==='US'?fl.some((l,i)=>i>0&&l&&fl[i-1]&&l===fl[i-1]):new Set(fl.filter(Boolean)).size>1;}
+  return{persons:list,throws:ths,clusters,questions};
+}
+/* Each person's frames are rebuilt slot by slot. A ball the camera missed is filled in from the pins standing in front
+   of the next ball when that is visible; anything the video cannot settle becomes a question for the user. */
+function scoreByOrder(ths,order,persons,o,refs,questions){
+  const fill=o.fill||{};
+  for(const key of order){const p=persons[key];
+    const mine=ths.filter(t=>t.person===key).sort((x,y)=>(x.frame0-y.frame0)||(x.ball-y.ball)||(x.tRelease-y.tRelease));
+    if(!mine.length)continue;
+    const lastF=mine[mine.length-1].frame0,frames=[];for(let f=0;f<10;f++)frames.push([]);
+    for(const th of mine){const fr=frames[th.frame0];let j=th.ball;while(fr[j])j++;fr[j]=th;}
+    for(let f=0;f<=lastF;f++){const fr=frames[f],maxB=f<9?2:3;let standing=10;const kn=[];
+      for(let j=0;j<maxB;j++){
+        if(f<9&&j===1&&kn[0]===10)break;
+        if(f===9&&j===2&&!(kn[0]===10||(kn[0]!=null&&kn[1]!=null&&kn[0]+kn[1]===10)))break;
+        const th=fr[j],nx=fr.slice(j+1).find(Boolean),later=f<lastF||fr.slice(j+1).some(Boolean);
+        if(!th&&!later)break;                                  // not bowled yet
+        const before=standing;let k=null,conf='low',opts=null,guess=null;
+        // pins standing after this ball, best evidence first: in front of the same person's next ball, then just after impact
+        const sameRack=!(f===9&&before===10&&j>0&&false);
+        let after=null,amb=0;
+        if(nx&&nx.B&&nx.B.count<10&&sameRack){after=Math.min(nx.B.count,before);amb=nx.B.amb||0;conf='mid';}
+        else if(th&&th.W){after=Math.min(th.W.count,before);amb=th.W.amb||0;conf='low';}
+        if(th){
+          if(o.pins[th.id]!=null){k=Math.min(before,o.pins[th.id]);conf='set';}
+          else{
+            const alone=f<9&&j===0&&!fr[1]&&fill[key+'|'+f+'|1']==null; // an answered second ball means it was not a strike
+            if(alone&&!(nx)){                                  // the only ball of the turn: a strike unless pins are still standing after it
+              if(th.W&&th.W.count>0&&th.W.count<10){const base=before-th.W.count,gs=Math.min(9,base+(th.W.amb||0));k=gs;conf='low';
+                if(f<lastF){const op=[10];for(let x=Math.max(0,base-1);x<=Math.min(9,gs+1);x++)op.push(x);
+                  questions.push({qid:'s|'+th.id,kind:'strike',person:key,frame:f,ball:j,evId:th.id,t:th.tArrive+1.4,lane:th.lane,options:op,guess:gs});}}
+              else{k=10;conf=th.W&&th.W.count===0?'mid':'low';}}
+            else if(after!=null){k=before-after;
+              // a back pin hidden behind a standing front pin has usually already gone down
+              // after a second ball the hidden pin was more often still standing (the ball missed it)
+              if(amb&&k===0&&th.D&&th.D.quiet){conf='mid';th.deckQuiet=true;}   // the deck never moved: nothing fell, hidden pins included
+              else if(amb){opts=[];for(let a=0;a<=amb;a++)if(k+a<=before)opts.push(k+a);const gs=j>0?opts[0]:opts[opts.length-1];
+                questions.push({qid:'p|'+th.id,kind:'pins',person:key,frame:f,ball:j,evId:th.id,t:nx&&nx.B?nx.tRelease-.6:th.tArrive+1.4,lane:th.lane,options:opts,guess:gs,base:k});k=gs;}}
+            else{questions.push({qid:'p|'+th.id,kind:'pins',person:key,frame:f,ball:j,evId:th.id,t:th.tArrive+1.4,lane:th.lane,options:range(0,before),guess:null});}}
+          // a second ball in the same frame means the first one was not a strike
+          if(f<9&&j===0&&k===10&&fr[1]&&o.pins[th.id]==null){k=9;conf='low';const op=[];for(let x=5;x<=9;x++)op.push(x);
+            if(!questions.some(q=>q.evId===th.id))questions.push({qid:'p|'+th.id,kind:'pins',person:key,frame:f,ball:j,evId:th.id,t:fr[1].tRelease-.6,lane:th.lane,options:op,guess:9});}
+          th.knocked=k;th.conf=conf;th.standingBefore=before;th.frame=f;th.rollIndex=p.rolls.length;th.ask=conf!=='set'&&questions.some(q=>q.evId===th.id);
+          p.throws.push(th);}
+        else{// a ball the camera missed
+          const fk=key+'|'+f+'|'+j;
+          if(fill[fk]!=null){k=Math.min(before,fill[fk]);conf='set';}
+          else if(nx&&nx.B&&nx.B.count<10){k=before-Math.min(before,nx.B.count);conf='auto';
+            if(nx.B.amb){const gs=Math.min(before,k+nx.B.amb);questions.push({qid:'m|'+fk,kind:'missing',person:key,frame:f,ball:j,fk,t:nx.tRelease-.6,lane:nx.lane,options:range(k,gs),guess:gs,base:k});k=gs;}}
+          else{questions.push({qid:'m|'+fk,kind:'missing',person:key,frame:f,ball:j,fk,t:fr.find(Boolean)?fr.find(Boolean).tRelease:null,lane:fr.find(Boolean)?fr.find(Boolean).lane:null,options:range(0,before),guess:null});}
+          p.missing=p.missing||[];p.missing.push({fk,frame:f,ball:j,knocked:k,conf,rollIndex:p.rolls.length});}
+        kn.push(k);p.rolls.push(k);
+        standing=k==null?standing:before-k;if(f===9&&standing<=0)standing=10;}
+      for(const th of fr)if(th&&th.rollIndex==null){th.frame=f;th.knocked=null;th.conf='low';th.standingBefore=10;th.extra=true;}
+      // only the last ball of a frame decides how many pins the frame took in all; earlier balls just split it
+      const lastJ=kn.length-1;
+      for(let i=questions.length-1;i>=0;i--){const q=questions[i];if(q.person!==key||q.frame!==f||q.answered)continue;
+        if((q.kind==='pins'||q.kind==='missing')&&q.ball<lastJ&&q.guess!=null&&kn[lastJ]!=null&&!(f===9))questions.splice(i,1);}
+    }
+  }
+  function range(a,b){const r=[];for(let x=a;x<=b;x++)r.push(x);return r;}
+}
+// a throw's ball is measured only on the lane that suits the hand: right-handed on the left lane, left-handed on the right lane
+const measureLane=hand=>hand==='L'?'R':'L';
+
+/* ---------- continuous stream: finds throws in a long video or a live camera ---------- */
+function createStream(g,opt){
+  const o=Object.assign({lane:'L',thr:70,alpha:.03,keep:12,pinEvery:.25,crops:false,el:null,srcW:g.AW,srcH:g.AH},opt||{});
+  const B=buffers(g),box=personBox(g);let lut=ballLut(o.balls);let bg=null;const tracks=[],events=[],frames=[],readings=[],sigs=[];let lastPin=-1e9,lastSig=-1e9,shaken=-1e9,fgAvg=0,unstableUntil=-1e9,prev=null;
+  function finalize(tr){
+    const p=tr.pts;if(o.debug&&p.length>=3)o.debug(p);if(p.length<4)return null;const span=p[p.length-1].v-p[0].v;
+    // a real delivery covers a good stretch of lane; short bursts are people walking or the camera shaking
+    if(span<8)return null;
+    // the ball must be seen in a good share of the frames it spent on the lane (walking people flicker in and out)
+    const ints=[];for(let i=Math.max(1,frames.length-30);i<frames.length;i++)ints.push(frames[i].t-frames[i-1].t);
+    const fdt=median(ints.filter(x=>x>0))||1/30,expect=(p[p.length-1].t-p[0].t)/fdt+1;
+    // short stretches (gutter balls, a ball hidden by the bowler) count only when followed steadily
+    // and seen often enough in absolute terms: about a quarter of a second of sightings at any frame rate
+    if(p.length<Math.max(5,.25/fdt)||p.length<(span<12?.5:.2)*expect)return null;
+    const sp=theilSen(p.map(x=>x.t),p.map(x=>x.v));if(!(sp>=8&&sp<=38))return null; // 9-42 km/h
+    const ev={lane:o.lane,col:chainColor(p),tRelease:p[0].t-Math.max(0,p[0].v)/sp,tArrive:p[p.length-1].t+Math.max(0,60-p[p.length-1].v)/sp,speed:sp,vFirst:p[0].v,vLast:p[p.length-1].v,n:p.length};
+    // one lane cannot see two balls within 8 s (the pinsetter needs that long)
+    const dup=events.find(e=>Math.abs(e.tRelease-ev.tRelease)<8);
+    if(dup){if(ev.n>dup.n)Object.assign(dup,ev);return null;}
+    // the delivery itself: from the last steps to just after release
+    const ss=sigs.filter(x=>x.t>=ev.tRelease-.6&&x.t<=ev.tRelease+.3);
+    ev.sig=ss.length?ss.slice(1).reduce((acc,x,i)=>sigMix(acc,i+1,x.h),ss[0].h):null;
+    events.push(ev);return ev;
+  }
+  function push(d,t){
+    if(!bg){bg=new Float32Array(d.length);for(let q=0;q<d.length;q++)bg[q]=d[q];unstableUntil=t+1;}
+    // camera moving (zooming, bumped): most of the lane changes from one frame to the next, not just where people walk
+    if(prev){let ch=0,n=0;for(let k=0;k<g.maskIdx.length;k+=7){const q=g.maskIdx[k]<<2;n++;if(Math.abs(d[q]-prev[q])+Math.abs(d[q+1]-prev[q+1])+Math.abs(d[q+2]-prev[q+2])>45)ch++;}
+      if(n&&ch/n>.3){unstableUntil=t+1;tracks.length=0;}}
+    if(!prev)prev=new Uint8ClampedArray(d.length);prev.set(d);
+    if(t<unstableUntil){for(let q=0;q<d.length;q++)bg[q]=d[q];frames.push({t,cands:[],shaken:true});while(frames.length&&frames[0].t<t-o.keep)frames.shift();return[];}
+    const blobs=findBlobs(d,bg,g,o.thr,B),a=o.alpha;
+    // a large share of the lane changing at once means the camera moved: start the background over
+    let fg=0;for(const p of g.maskIdx)if(B.bin[p]===2)fg++;
+    if(o.debugFg)o.debugFg(t,fg/g.maskIdx.length);const fgr=fg/g.maskIdx.length,jump=fgr>(o.shake||.5)&&fgr>fgAvg*2.2+.15;fgAvg=fgAvg*.97+fgr*.03;
+    if(jump){for(let q=0;q<d.length;q++)bg[q]=d[q];tracks.length=0;frames.push({t,cands:[],shaken:true});
+      while(frames.length&&frames[0].t<t-o.keep)frames.shift();shaken=t;return[];}
+    if(t-shaken<1)tracks.length=0;
+    // pixels under a detected object still adapt, only slower, so ghosts of things that moved away fade out
+    for(const p of g.maskIdx){const k=B.bin[p]===2?a*.15:a,q=p<<2;bg[q]+=(d[q]-bg[q])*k;bg[q+1]+=(d[q+1]-bg[q+1])*k;bg[q+2]+=(d[q+2]-bg[q+2])*k;}
+    const cands=frameCands(d,bg,g,o.thr,B,lut,blobs);for(const c of cands){c.t=t;if(o.crops&&o.el)c.vec=cropVec(o.el,o.srcW,o.srcH,g,c);}
+    frames.push({t,cands});while(frames.length&&frames[0].t<t-o.keep)frames.shift();
+    // follow balls moving down the lane
+    for(const c of cands){if(c.v<-1||c.v>58)continue;let best=null,bd=1e9;
+      for(const tr of tracks){const l=tr.pts[tr.pts.length-1],dt=t-l.t;if(dt<=0||dt>.7)continue;const dv=c.v-l.v,sp=dv/dt;
+        if(sp<5||sp>70||Math.abs(c.u-l.u)>.6*dv+1.5)continue;const pred=l.v+(tr.sp||22)*dt,e=Math.abs(c.v-pred);if(e<bd){bd=e;best=tr;}}
+      if(best){best.pts.push({t,v:c.v,u:c.u,col:c.col});const n=best.pts.length;if(n>=3)best.sp=theilSen(best.pts.map(x=>x.t),best.pts.map(x=>x.v));}
+      else if(c.v<=35)tracks.push({pts:[{t,v:c.v,u:c.u,col:c.col}]});}
+    const fresh=[];
+    for(let i=tracks.length-1;i>=0;i--){const tr=tracks[i],l=tr.pts[tr.pts.length-1];if(t-l.t>.8||l.v>58){tracks.splice(i,1);const ev=finalize(tr);if(ev)fresh.push(ev);}}
+    if(tracks.length>40)tracks.splice(0,tracks.length-40);
+    if(t-lastSig>=.1){const h=formSig(d,bg,box,o.thr);if(h)sigs.push({t,h});lastSig=t;}
+    if(t-lastPin>=o.pinEvery){readings.push(readings.length?{t,f:readPins(d,g)}:{t,f:readPins(d,g),pp:g.pinPairs});lastPin=t;
+      while(sigs.length&&sigs[0].t<t-30)sigs.shift();}
+    // the approach background adapts slowly so a bowler standing still is not absorbed within one delivery
+    for(const p of box.idx){const q=p<<2;bg[q]+=(d[q]-bg[q])*a*.3;bg[q+1]+=(d[q+1]-bg[q+1])*a*.3;bg[q+2]+=(d[q+2]-bg[q+2])*a*.3;}
+    return fresh;
+  }
+  // full measurement of one throw from the frames kept in memory (live mode)
+  function measure(ev,hand){
+    const win=frames.filter(f=>f.t>=ev.tRelease-.3&&f.t<=ev.tArrive+.3);if(win.length<6)return null;
+    const ints=[];for(let i=1;i<win.length;i++)ints.push(win[i].t-win[i-1].t);const dt=median(ints)||1/30;
+    const n=Math.round((win[win.length-1].t-win[0].t)/dt)+1,cands=Array.from({length:n},()=>[]);
+    for(const f of win){const k=Math.round((f.t-win[0].t)/dt);if(k>=0&&k<n)for(const c of f.cands)cands[k].push(Object.assign({},c,{f:k}));}
+    const chain=bestChain(cands,dt);if(chain.length<5)return null;
+    return{raw:{chain,dt,n,t0:win[0].t},res:computeResults({chain,dt},hand)};
+  }
+  return{push,measure,events,readings,frames,sigs,box,reset(){bg=null;},setBalls(b){lut=ballLut(b);}};
+}
+
+/* ---------- automatic lane finder ----------
+   Works on one still picture of the lanes (best: the median of a few frames, so people and balls vanish).
+   1. vanishing point of the lane lines (every board, gutter and lane edge points at it)
+   2. look along rays from that point: s = (x - vpx)/(y - vpy) is the sideways position on the floor,
+      so each lane, gutter and ball return becomes a vertical strip of fixed width
+   3. fit "lane | gap | lane" to the strips (calm, wood-coloured lanes bordered by long straight edges)
+   4. far end = base of the pin rack (rows of narrow white stripes), near end = where the gutters stop (foul line) */
+const LF_GUT=9.25/41.5;
+function lfMedian(a){const s=a.filter(v=>v===v).sort((x,y)=>x-y);return s.length?s[s.length>>1]:NaN;}
+function lfVP(d,W,H){
+  const g=new Float32Array(W*H);for(let i=0;i<W*H;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+  const cs=Math.max(2,Math.round(W/160)),X0=-W,X1=2*W,Y0=-H,Y1=Math.round(H*.6),NX=Math.ceil((X1-X0)/cs),NY=Math.ceil((Y1-Y0)/cs),acc=new Float32Array(NX*NY);
+  const step=W>700?2:1;
+  for(let y=2;y<H-2;y+=step)for(let x=2;x<W-2;x+=step){const i=y*W+x;
+    const gx=(g[i-W+1]+2*g[i+1]+g[i+W+1])-(g[i-W-1]+2*g[i-1]+g[i+W-1]),gy=(g[i+W-1]+2*g[i+W]+g[i+W+1])-(g[i-W-1]+2*g[i-W]+g[i-W+1]);
+    const m=Math.hypot(gx,gy);if(m<60)continue;const dx=-gy/m,dy=gx/m;if(Math.abs(dy)<.2||Math.abs(dx)<.03)continue;
+    const w=Math.min(m,400),k=dx/dy;
+    for(let r=0;r<NY;r++){const vy=Y0+r*cs+cs/2;if(vy>=y)break;const c=Math.floor((x+(vy-y)*k-X0)/cs);if(c>=0&&c<NX)acc[r*NX+c]+=w;}}
+  let best=-1,bi=0;for(let r=1;r<NY-1;r++)for(let c=1;c<NX-1;c++){let s=0;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)s+=acc[(r+a)*NX+c+b];if(s>best){best=s;bi=r*NX+c;}}
+  return{x:X0+(bi%NX)*cs+cs/2,y:Y0+Math.floor(bi/NX)*cs+cs/2};
+}
+function lfRectify(d,W,H,vp,NS){
+  const y0=Math.max(0,Math.ceil(vp.y+6)),rows=H-y0,sMin=(0-vp.x)/(H-vp.y),sMax=(W-vp.x)/(H-vp.y),ds=(sMax-sMin)/(NS-1);
+  const sat=new Float32Array(rows*NS).fill(NaN),lum=new Float32Array(rows*NS).fill(NaN);
+  for(let r=0;r<rows;r++){const y=y0+r;for(let k=0;k<NS;k++){const x=Math.round(vp.x+(sMin+ds*k)*(y-vp.y));if(x<0||x>=W)continue;const i=(y*W+x)*4,R=d[i],G=d[i+1],B=d[i+2];
+    sat[r*NS+k]=Math.max(R,G,B)-Math.min(R,G,B);lum[r*NS+k]=.299*R+.587*G+.114*B;}}
+  return{y0,rows,sMin,ds,sat,lum,NS,S:k=>sMin+ds*k};
+}
+function lfProfiles(R,r0,r1){const{NS,lum,sat}=R;const C=new Float32Array(NS),Sg=new Float32Array(NS),SA=new Float32Array(NS),n=r1-r0,gap=Math.max(1,Math.round(NS/240));
+  for(let r=r0;r<r1;r++)for(let k=gap;k<NS-gap;k++){const a=lum[r*NS+k-gap],b=lum[r*NS+k+gap];if(a!==a||b!==b){C[k]+=.5;continue;}const g=b-a;C[k]+=Math.abs(g)>12?1:0;Sg[k]+=g;}
+  for(let k=0;k<NS;k++){C[k]/=n;Sg[k]/=n;const v=[];for(let r=r0;r<r1;r++)v.push(sat[r*NS+k]);SA[k]=lfMedian(v);if(SA[k]!==SA[k])SA[k]=0;}
+  const hw=Math.max(2,Math.round(.015/R.ds)),Cs=new Float32Array(NS);for(let k=0;k<NS;k++){let s=0,m=0;for(let j=-hw;j<=hw;j++){const v=C[k+j];if(v!=null){s+=v;m++;}}Cs[k]=s/m;}
+  return{C:Cs,Sg,SA};}
+// best "lane | gap | lane" (or a single lane when only one is in view)
+function lfFit(R,F,single){const{NS,ds}=R;const E0=F.Sg.map(Math.abs),srt=[...E0].sort((a,b)=>a-b),n97=srt[Math.floor(NS*.97)]||1;
+  const E=E0.map((_,k)=>Math.min(1.5,Math.max(E0[k-1]||0,E0[k],E0[k+1]||0)/n97));
+  const pre=new Float64Array(NS+1),ps=new Float64Array(NS+1);for(let k=0;k<NS;k++){pre[k+1]=pre[k]+F.C[k];ps[k+1]=ps[k]+F.SA[k];}
+  const calm=(k0,k1)=>{k0=Math.max(0,k0);k1=Math.min(NS,k1);return k1-k0<2?0:1-(pre[k1]-pre[k0])/(k1-k0)/.6;};
+  const satM=(k0,k1)=>{k0=Math.max(0,k0);k1=Math.min(NS,k1);return k1-k0<1?null:(ps[k1]-ps[k0])/(k1-k0);};
+  const at=k=>k>=0&&k<NS?E[k]:0;let best=null;
+  const wMin=Math.round(.12/ds),wMax=Math.round(2.2/ds);
+  for(let w=wMin;w<=wMax;w++){const gu=Math.round(LF_GUT*w);
+    const gaps=single?[0]:[];if(!single)for(let gap=Math.round(.4*w);gap<=Math.round(1.3*w);gap++)gaps.push(gap);
+    for(const gap of gaps)for(let a=-w;a<NS;a++){const b=a+w,c=single?a:b+gap,e=single?b:c+w;if(b<0)continue;if(c>=NS)break;if(e>NS+w*.6)continue;
+      const vis=(single?[a,b]:[a,b,c,e]).filter(k=>k>=0&&k<NS).length;if(vis<(single?2:3))continue;
+      let s,sl,sg;
+      if(single){s=2*(at(a)+at(b))+.8*(at(a-gu)+at(b+gu))+3*calm(a+2,b-1);sl=satM(a+2,b-1);const so=[satM(a-gu,a-1),satM(b+1,b+gu)].filter(v=>v!=null);sg=so.length?so.reduce((x,y)=>x+y)/so.length:sl;
+        s+=2*Math.max(-1,Math.min(1,(sl-sg)/Math.max(6,sl)*2));s-=.8*Math.min(1,Math.abs(R.S((a+b)/2))/(w*ds));}
+      else{s=at(a)+at(b)+at(c)+at(e)+.4*(at(a-gu)+at(e+gu))+.3*(at(b+gu)+at(c-gu))+1.5*(calm(a+2,b-1)+calm(c+2,e-1));
+        sl=(satM(a+2,b-1)+satM(c+2,e-1))/2;const g0=satM(b+1,c-1),so=[satM(a-gu,a-1),satM(e+1,e+gu)].filter(v=>v!=null),sgo=so.length?so.reduce((x,y)=>x+y)/so.length:g0;
+        s+=2*Math.max(-1,Math.min(1,(sl-(g0+sgo)/2)/Math.max(6,sl)*2));
+        s-=.8*Math.min(1,Math.abs(R.S((b+c)/2))/(w*ds));}   // the camera usually sits behind the ball return between the pair
+      if(!best||s>best.s)best={s,a,b,c,e,w};}}
+  return best;}
+// pin rack rows: narrow white stripes across the lane; base = min(bottom, top + pin height) so a reflection on the lane does not count
+function lfPins(d,W,H,vp,sa,sb){
+  const rowsOk=[];for(let y=Math.max(0,Math.ceil(vp.y+2));y<vp.y+(H-vp.y)*.6&&y<H;y++){
+    const x0=Math.max(0,Math.round(vp.x+sa*(y-vp.y))),x1=Math.min(W-1,Math.round(vp.x+sb*(y-vp.y))),wpx=x1-x0;if(wpx<6){rowsOk.push(0);continue;}
+    let cnt=0,run=0;const wmax=Math.max(2,wpx/7);
+    for(let x=x0;x<=x1+1;x++){let wh=false;if(x<=x1){const i=(y*W+x)*4,r=d[i],g=d[i+1],b=d[i+2];wh=.299*r+.587*g+.114*b>150&&Math.max(r,g,b)-Math.min(r,g,b)<50;}
+      if(wh)run++;else{if(run>=1&&run<=wmax)cnt++;run=0;}}
+    rowsOk.push(cnt);}
+  const yS=Math.max(0,Math.ceil(vp.y+2));let groups=[],cur=null;
+  rowsOk.forEach((c,i)=>{const y=yS+i;if(c>=3){if(cur&&y-cur.y1<=2){cur.y1=y;cur.sum+=Math.min(c,7);}else{cur={y0:y,y1:y,sum:Math.min(c,7)};groups.push(cur);}}});
+  groups=groups.filter(g=>g.y1-g.y0>=2);if(!groups.length)return null;
+  // the rack is the first band of stripes below the vanishing point (lower bands are balls, shoes, gutter caps)
+  // and is at least about one pin tall (a line of lettering on the sign above is not)
+  const hAt=y=>(15/41.5)*(sb-sa)*(y-vp.y);
+  const g=groups.find(x=>x.sum/(x.y1-x.y0+1)>=3&&x.y1-x.y0+1>=.6*hAt(x.y0));if(!g)return null;
+  const hp=(15/41.5)*(sb-sa)*(g.y0-vp.y);   // pin height in pixels at that depth (first guess)
+  // refine: pin height uses the lane width at the base
+  let base=Math.min(g.y1,g.y0+hp);for(let it=0;it<3;it++){const h=(15/41.5)*(sb-sa)*(base-vp.y);base=Math.min(g.y1,g.y0+h);}
+  return{y:base,top:g.y0,bottom:g.y1,strength:g.sum/(g.y1-g.y0+1)};
+}
+// foul line: the gutters end and the approach (wood) starts, so a gutter strip suddenly looks like the lane next to it
+function lfFoul(d,W,H,vp,strips,lanes,yStart){
+  const col=(y,[s0,s1])=>{const x0=Math.round(vp.x+s0*(y-vp.y)),x1=Math.round(vp.x+s1*(y-vp.y));const c=[[],[],[]];
+    for(let x=Math.max(0,x0);x<=Math.min(W-1,x1);x++){const i=(y*W+x)*4;c[0].push(d[i]);c[1].push(d[i+1]);c[2].push(d[i+2]);}
+    if(!c[0].length)return null;return c.map(a=>{a.sort((p,q)=>p-q);return a[a.length>>1];});};
+  const dist=(a,b)=>a&&b?Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]):NaN;
+  const step=Math.max(1,Math.round(H/360)),ys=[];for(let y=Math.round(yStart);y<H;y+=step)ys.push(y);
+  const found=[];
+  for(const st of strips){const D=ys.map(y=>{const c=col(y,st);return Math.min(...lanes.map(l=>dist(c,col(y,l))).filter(v=>v===v));});
+    for(let i=4;i<D.length-4;i++){const ref=lfMedian(D.slice(Math.max(0,i-12),i)),nxt=lfMedian(D.slice(i,i+4));
+      if(ref>45&&nxt<ref*.3){// interpolate where the drop crosses halfway
+        let j=i;while(j>0&&D[j-1]<(ref+nxt)/2)j--;while(j<i+3&&D[j]>(ref+nxt)/2)j++;found.push(ys[j]-step*.5);break;}}}
+  if(!found.length)return null;found.sort((a,b)=>a-b);
+  // the earliest drop that at least two strips agree on (a person standing in one strip only blocks that one)
+  const tol=H*.03;for(let i=0;i<found.length;i++){const near=found.filter(v=>Math.abs(v-found[i])<=tol);if(near.length>=2)return{y:lfMedian(near),n:near.length,all:found};}
+  return{y:found[0],n:1,all:found};
+}
+/* d: RGBA pixels W x H. returns {L:[4 pts],R:[4 pts]} in 0..1 coordinates (near-left, near-right, far-right, far-left), plus a confidence */
+function autoLanes(d,W,H,opt){
+  const o=Object.assign({single:false},opt||{});
+  const vp=lfVP(d,W,H);if(!(vp.y<H*.5))return{ok:false,why:'vp'};
+  const R=lfRectify(d,W,H,vp,240),F=lfProfiles(R,Math.round(R.rows*.1),Math.round(R.rows*.45));
+  const fit=lfFit(R,F,o.single);if(!fit)return{ok:false,why:'fit'};
+  // refine each edge to the strongest consistent edge nearby on a finer grid
+  const R2=lfRectify(d,W,H,vp,720),F2=lfProfiles(R2,Math.round(R2.rows*.1),Math.round(R2.rows*.45));
+  const ref=s=>{const k=Math.round((s-R2.sMin)/R2.ds);let bk=k,bv=-1;for(let j=-4;j<=4;j++){const v=Math.abs(F2.Sg[k+j]||0);if(v>bv){bv=v;bk=k+j;}}return bk>=0&&bk<R2.NS&&bv>2?R2.S(bk):s;};
+  const sa=ref(R.S(fit.a)),sb=ref(R.S(fit.b)),sc=o.single?sa:ref(R.S(fit.c)),se=o.single?sb:ref(R.S(fit.e)),ws=sb-sa,g=LF_GUT*ws;
+  const lanes=o.single?[[sa,sb]]:[[sa,sb],[sc,se]];
+  // far end: pins of each lane (take the one found more clearly; the deck is the same distance for both)
+  const pins=lanes.map(([a,b])=>lfPins(d,W,H,vp,a,b)).filter(Boolean);
+  // both racks sit at the same depth: if they disagree trust the upper one
+  const pin=pins.length?pins.reduce((a,b)=>Math.abs(a.y-b.y)>H*.02?(b.y<a.y?b:a):(b.strength>a.strength?b:a)):null;
+  const yFar=pin?pin.y:null;
+  const inner=lanes.map(([a,b])=>[a+(b-a)*.15,b-(b-a)*.15]);
+  const strips=[[sa-g*.75,sa-g*.25],[(o.single?sb:se)+g*.25,(o.single?sb:se)+g*.75]];
+  if(!o.single)strips.push([sb+g*.25,sb+g*.75],[sc-g*.75,sc-g*.25]);
+  const foul=lfFoul(d,W,H,vp,strips,inner,(yFar!=null?yFar:vp.y)+(H-vp.y)*.15);
+  const yNear=foul?Math.min(foul.y,H-1):null;
+  const pt=(s,y)=>[(vp.x+s*(y-vp.y))/W,y/H];
+  const res={ok:yFar!=null&&yNear!=null,vp:{x:vp.x/W,y:vp.y/H},score:fit.s,pin,foul,s:lanes};
+  if(res.ok){const quad=([a,b])=>[pt(a,yNear),pt(b,yNear),pt(b,yFar),pt(a,yFar)];
+    if(o.single)res.L=quad(lanes[0]);else{res.L=quad(lanes[0]);res.R=quad(lanes[1]);}
+    // confidence: a clear rack, two gutters agreeing on the foul line, a fair fit, and the lanes' far ends inside the picture
+    const inside=lanes.every(([a,b])=>pt(a,yFar)[0]>=0&&pt(b,yFar)[0]<=1);
+    res.conf=pin.strength>=4&&foul.n>=2&&fit.s>(o.single?5:6)&&inside?'high':'low';}
+  return res;
+}
+
+
+// per-pixel median of a few frames: people, balls and the pinsetter sweep vanish, the lanes stay
+function medianImage(frames,W,H){const n=frames.length,out=new Uint8ClampedArray(W*H*4),t=new Uint8Array(n),m=n>>1;
+  for(let i=0;i<W*H*4;i++){if((i&3)===3){out[i]=255;continue;}for(let k=0;k<n;k++)t[k]=frames[k][i];t.sort();out[i]=t[m];}return out;}
+// find the lanes in a set of frames; the two halves are checked against each other so a moving crowd cannot fool it
+function findLanes(frames,W,H,opt){
+  if(!frames.length)return{ok:false,why:'frames'};
+  const all=autoLanes(medianImage(frames,W,H),W,H,opt);
+  if(!all.ok||frames.length<6)return all;
+  const pts=r=>[...(r.L||[]),...(r.R||[])];
+  const a=autoLanes(medianImage(frames.filter((_,i)=>i%2===0),W,H),W,H,opt),b=autoLanes(medianImage(frames.filter((_,i)=>i%2===1),W,H),W,H,opt);
+  let worst=0;for(const r of[a,b]){if(!r.ok){worst=1;continue;}const p=pts(r),q=pts(all);if(p.length!==q.length){worst=1;continue;}
+    p.forEach((x,i)=>{worst=Math.max(worst,Math.hypot(x[0]-q[i][0],(x[1]-q[i][1])*H/W));});}
+  all.agree=worst;if(worst>.02)all.conf='low';
+  return all;
+}
+
+return{autoLanes,medianImage,findLanes,scoreByOrder,pinPairs,pFirst,turnSeq,assignLane,pStrike,formSig,formSim,isForm,FORM_N,laneROI,toSrc,colorBin,colorHist,histSim,meanHist,matchBall,ballLut,refineBlob,frameCands,chainColor,
+  BOARD_IN,KMH,MPH,RPM_V0,RPM_V1,EXT,solveH,applyH,linfit,theilSen,buildGeom,toLane,diamAt,buffers,findBlobs,evalBlob,cropVec,bestChain,
+  boardOf,computeResults,rpmEst,summarize,pinLayout,readPins,pinRef,pinState,scoreGame,rackBefore,estimatePins,createStream,
+  personBox,personSig,sigSim,sigMix,buildGame,measureLane};
+})();
+</script>
+<script>
+const{RPM_V0,RPM_V1}=BL;
+function tok(){const s=getComputedStyle(document.documentElement),g=n=>s.getPropertyValue(n).trim();
+  return{ink:g('--ink'),muted:g('--muted'),line:g('--line'),accent:g('--accent'),maple:g('--maple'),mapleLine:g('--maple-line'),
+    gutter:g('--gutter'),surface:g('--surface'),sunken:g('--sunken'),warn:g('--warn')};}
+const MONO="11px 'JetBrains Mono',ui-monospace,monospace";
+function laneBase(cv,hand,label){
+  const bw=cv.parentElement.clientWidth||300,W=Math.max(220,Math.min(bw,320)),H=Math.round(W*1.9),dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  const c=cv.getContext('2d'),T=tok();c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);
+  const ml=34,mr=8,mt=30,mb=24,gw=6,lx=ml+gw,lw=W-ml-mr-2*gw,top=mt,bot=H-mb,vMin=-2,vMax=64;
+  const X=u=>lx+u/39*lw,Y=v=>bot-(v-vMin)/(vMax-vMin)*(bot-top);
+  c.fillStyle=T.gutter;c.fillRect(lx-gw,Y(60),gw,Y(vMin)-Y(60));c.fillRect(lx+lw,Y(60),gw,Y(vMin)-Y(60));
+  c.fillStyle=T.maple;c.fillRect(lx,Y(vMax),lw,Y(vMin)-Y(vMax));
+  c.fillStyle=T.accent;c.globalAlpha=.10;c.fillRect(lx,Y(RPM_V1),lw,Y(RPM_V0)-Y(RPM_V1));c.globalAlpha=1;
+  c.strokeStyle=T.mapleLine;c.lineWidth=.6;c.beginPath();for(let k=1;k<39;k++){const x=Math.round(X(k))+.5;c.moveTo(x,Y(vMin));c.lineTo(x,Y(60));}c.stroke();
+  c.strokeStyle=T.ink;c.lineWidth=1.6;c.beginPath();c.moveTo(lx,Y(0));c.lineTo(lx+lw,Y(0));c.stroke();
+  const bu=b=>hand==='R'?39.5-b:b-.5;c.fillStyle=T.ink;c.globalAlpha=.6;
+  for(const b of[3,5,8,11,14,26,29,32,35,37]){c.beginPath();c.arc(X(bu(b)),Y(7),1.6,0,7);c.fill();}
+  for(const b of[5,10,15,20,25,30,35]){const tip=16-Math.abs(b-20)/5,x=X(bu(b));c.beginPath();c.moveTo(x,Y(tip));c.lineTo(x-3,Y(tip-2.6));c.lineTo(x+3,Y(tip-2.6));c.closePath();c.fill();}
+  c.globalAlpha=1;
+  for(let r=0;r<4;r++)for(let k=0;k<=r;k++){const u=19.5+(k-r/2)*11.28,v=60.6+r*.866;c.fillStyle=T.surface;c.strokeStyle=T.ink;c.lineWidth=1;
+    c.beginPath();c.arc(X(u),Y(v),Math.max(2.5,lw/39*2.2),0,7);c.fill();c.stroke();}
+  c.font=MONO;c.fillStyle=T.muted;c.textAlign='right';c.textBaseline='middle';
+  for(const v of[0,15,30,40,60]){c.fillText(v,ml-4,Y(v));c.fillRect(ml-2,Y(v)-.5,3,1);}
+  c.textAlign='left';c.fillText('ft',4,Y(vMax)+2);
+  if(label){c.save();c.translate(lx+lw-3,Y(RPM_V1)+3);c.textAlign='right';c.textBaseline='top';c.fillStyle=T.accent;c.font="bold 10px 'Zen Kaku Gothic New',system-ui";c.fillText('回転数の計測区間',0,0);c.restore();}
+  c.textAlign='center';c.textBaseline='alphabetic';for(const b of[5,10,15,20,25,30,35])c.fillText(b,X(bu(b)),H-6);
+  c.textAlign=hand==='R'?'right':'left';c.fillText('板目→',hand==='R'?lx+lw:lx,H-6);
+  c.lineJoin='round';c.lineCap='round';
+  return{c,T,X,Y,lx,lw,W,H};
+}
+function laneLine(L,pts,dash,col,w){const{c,X,Y}=L;if(pts.length<2)return;c.setLineDash(dash);c.strokeStyle=col;c.lineWidth=w;c.beginPath();pts.forEach(([u,v],i)=>i?c.lineTo(X(u),Y(v)):c.moveTo(X(u),Y(v)));c.stroke();c.setLineDash([]);}
+function laneMarks(L,rows){const{c,T,X,Y,lx,lw}=L;c.font="bold 11px 'JetBrains Mono',ui-monospace,monospace";c.textBaseline='middle';
+  for(const row of rows){if(row.name==='ドット'||row.name==='40 ft'||row.board==null||row.u==null)continue;const x=X(row.u),y=Y(row.v);
+    c.fillStyle=T.surface;c.strokeStyle=T.accent;c.lineWidth=2;c.beginPath();c.arc(x,y,row.key?5:3.5,0,7);c.fill();c.stroke();
+    const right=x<lx+lw/2,tx=right?x+9:x-9;c.textAlign=right?'left':'right';const t=String(row.board);
+    c.lineWidth=3;c.strokeStyle=T.maple;c.strokeText(t,tx,y);c.fillStyle=T.ink;c.fillText(t,tx,y);}}
+function laneEmpty(L,text){const{c,T,Y,lx,lw}=L;c.fillStyle=T.muted;c.textAlign='center';c.font="13px 'Zen Kaku Gothic New',system-ui";c.fillText(text,lx+lw/2,Y(30));}
+
+(()=>{
+const $=s=>document.querySelector(s);
+const{KMH,MPH,RPM_V0,RPM_V1,EXT}=BL;const LN={L:'左',R:'右'};
+const video=$('#cam'),view=$('#view'),vctx=view.getContext('2d');
+const work=document.createElement('canvas'),wctx=work.getContext('2d',{willReadFrequently:true});
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(_){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(_){}}};
+const S={cdrag:null,autoBusy:false,ballPend:null,frozenHi:null,armed:null,cam:null,AW:640,AH:360,cals:store.get('bl-live-cal',{L:null,R:null}),geoms:{},calMode:false,calLane:'L',calTmp:[],drag:null,frozen:null,
+  running:false,t0:0,streams:{},frames:0,fpsEst:0,rec:null,chunks:[],recBlob:null,wake:null,lastId:null};
+const GM={evs:[],opts:{format:'US',person:{},pins:{},names:{},fill:{},skipQ:{}},built:null};
+let people=store.get('bl-live-people',[]); // [{id,name,hand,sig,sigN}]
+let balls=store.get('bl-live-balls',[]);   // [{id,name,bowlerId,hist,n,thumb}]
+const esc=t=>String(t).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const fmtT=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+function msg(t,err){const m=$('#msg');m.textContent=t;m.classList.toggle('err',!!err);}
+function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,2200);}
+const defHand=()=>$('#defHand').value;
+
+/* ---------- camera ---------- */
+async function startCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg('この画面ではカメラを使えません。https:// で始まるアドレスで開いてください。',true);return;}
+  try{S.cam=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:60}}});}
+  catch(e){msg('カメラを起動できませんでした。ブラウザのカメラ許可を確認してください。',true);return;}
+  video.srcObject=S.cam;try{await video.play();}catch(_){}
+  await new Promise(r=>{if(video.videoWidth)r();else video.onloadedmetadata=()=>r();});
+  const w=video.videoWidth,h=video.videoHeight,k=Math.min(1,640/Math.max(w,h));S.AW=Math.round(w*k);S.AH=Math.round(h*k);
+  view.width=work.width=S.AW;view.height=work.height=S.AH;S.geoms={};
+  const st=S.cam.getVideoTracks()[0].getSettings();$('#camBadge').textContent=`${w}×${h}・${Math.round(st.frameRate||30)}fps`;
+  $('#camBtn').textContent='カメラ起動中';$('#camBtn').disabled=true;$('#calL').disabled=$('#calR').disabled=false;$('#ballBtn').disabled=false;$('#autoBtn').disabled=false;
+  try{S.wake=await navigator.wakeLock.request('screen');}catch(_){}
+  updateCal();requestAnimationFrame(preview);
+  if(S.cals.L||S.cals.R)msg('前回の位置合わせを使っています。ずれていれば「自動で位置合わせ」を押すか、角の丸をドラッグして直してください。');
+  else setTimeout(()=>autoCal(false),800);
+}
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&S.cam&&!S.wake){try{S.wake=await navigator.wakeLock.request('screen');}catch(_){}}});
+
+/* ---------- geometry & calibration ---------- */
+function ensureGeom(l){const c=S.cals[l];if(!c)return null;if(!S.geoms[l])S.geoms[l]=BL.buildGeom(c.pts,c.D,S.AW,S.AH);return S.geoms[l];}
+// auto zoom: analyse the lanes cut out of the camera image at (close to) full resolution
+const workA=document.createElement('canvas'),wctxA=workA.getContext('2d',{willReadFrequently:true});let roi=null,geomsA={};
+let roiBudget=420000;
+function prepareROI(){roi=BL.laneROI([S.cals.L,S.cals.R],video.videoWidth,video.videoHeight,roiBudget);geomsA={};if(roi){workA.width=roi.AW;workA.height=roi.AH;}}
+function ensureGeomA(l){const c=S.cals[l];if(!c)return null;if(!roi)return ensureGeom(l);if(!geomsA[l])geomsA[l]=BL.buildGeom(c.pts,c.D,roi.AW,roi.AH,roi);return geomsA[l];}
+function grabA(){if(!roi){wctx.drawImage(video,0,0,S.AW,S.AH);return wctx.getImageData(0,0,S.AW,S.AH).data;}
+  wctxA.drawImage(video,roi.x,roi.y,roi.w,roi.h,0,0,roi.AW,roi.AH);return wctxA.getImageData(0,0,roi.AW,roi.AH).data;}
+function updateCal(){
+  for(const l of['L','R']){const el=$('#calState'+l);
+    if(S.calMode&&S.calLane===l){el.textContent=`指定中 ${S.calTmp.length}/4`;el.className='chip ng';}
+    else if(S.cals[l]&&ensureGeom(l)){el.textContent='設定済み';el.className='chip ok';}
+    else{el.textContent='未設定';el.className='chip '+(l==='L'?'ng':'mut');}}
+  const h=$('#calHint');$('#stage').classList.toggle('cal',S.calMode);view.style.touchAction=S.calMode?'none':'manipulation';
+  if(S.calMode){const D=$('#calDist').value;h.hidden=false;
+    h.textContent=`${LN[S.calLane]}レーン：`+['① ファウルラインの左端','② ファウルラインの右端',`③ 奥（${D} ft）の右端`,`④ 奥（${D} ft）の左端`][S.calTmp.length]+'をタップ（押したまま動かすと拡大）';}
+  else h.hidden=true;
+  $('#runBtn').disabled=!S.cam||S.calMode||!(ensureGeom('L')||ensureGeom('R'));
+}
+/* ---------- automatic lane finding ---------- */
+async function autoCal(){
+  if(!S.cam||S.running||S.autoBusy||S.calMode)return;S.autoBusy=true;$('#autoBtn').disabled=true;
+  const W=S.AW,H=S.AH,cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d',{willReadFrequently:true}),frames=[];
+  // a few seconds of frames: people and balls move, the lanes stay put
+  for(let i=0;i<12;i++){msg(`レーンを探しています…（${i+1}/12）　カメラを動かさないでください`);cx.drawImage(video,0,0,W,H);frames.push(cx.getImageData(0,0,W,H).data);await new Promise(r=>setTimeout(r,300));}
+  await new Promise(r=>setTimeout(r,20));
+  let r=BL.findLanes(frames,W,H),single=false;if(!r.ok){r=BL.findLanes(frames,W,H,{single:true});single=true;}
+  S.autoBusy=false;$('#autoBtn').disabled=false;
+  if(!r.ok){msg('レーンの位置を自動で見つけられませんでした。ペアのレーンとピンが画面に入るようにカメラを向けて、もう一度「自動で位置合わせ」を押すか、4点で指定してください。',true);return;}
+  $('#calDist').value='60';const D=60;
+  if(single){const l=defHand()==='L'?'R':'L';S.cals[l]={pts:r.L,D};}else S.cals={L:{pts:r.L,D},R:{pts:r.R,D}};
+  S.geoms={};for(const l of['L','R'])if(S.cals[l]&&!ensureGeom(l))S.cals[l]=null;
+  if(!S.cals.L&&!S.cals.R){msg('レーンの位置を自動で見つけられませんでした。4点で指定してください。',true);return;}
+  store.set('bl-live-cal',S.cals);updateCal();
+  const unsure=r.conf!=='high'||single;$('#calAsk').hidden=!unsure;
+  if(unsure){$('#calAskText').textContent=(single?'レーンが1本しか見つかりませんでした。':'')+'自動で合わせたレーンの位置に自信がありません。黄色の枠がレーンの端（ファウルラインとピンの手前）に合っていますか？ずれている角は丸をドラッグして直せます。';msg('レーンの位置を確認してください。');}
+  else msg('レーンの位置を自動で合わせました。枠がずれていたら角の丸をドラッグして直せます。「ゲーム開始」で計測を始めます。');
+}
+$('#autoBtn').onclick=()=>autoCal();
+$('#calOk').onclick=()=>{$('#calAsk').hidden=true;msg('レーンの位置を確定しました。「ゲーム開始」で計測を始めます。');};
+$('#calRedo').onclick=()=>{$('#calAsk').hidden=true;startCal('L');};
+// drag a corner of a lane that is already set
+const nearCorner=p=>{const r=view.getBoundingClientRect();let best=null,bd=24;
+  for(const l of['L','R']){const c=S.cals[l];if(!c)continue;c.pts.forEach((q,i)=>{const d=Math.hypot((q[0]-p[0])*r.width,(q[1]-p[1])*r.height);if(d<bd){bd=d;best={lane:l,idx:i};}});}return best;};
+const cornerOk=()=>!S.calMode&&!S.ballMode&&!S.running&&!S.autoBusy&&S.cam;
+view.addEventListener('touchstart',e=>{if(!cornerOk()||e.touches.length!==1)return;if(nearCorner(calPos(e.touches[0])))e.preventDefault();},{passive:false});
+view.addEventListener('pointerdown',e=>{if(!cornerOk())return;const p=calPos(e),hit=nearCorner(p);if(!hit)return;e.preventDefault();try{view.setPointerCapture(e.pointerId);}catch(_){}
+  S.cdrag=Object.assign(hit,{orig:S.cals[hit.lane].pts[hit.idx].slice()});S.drag=p;});
+view.addEventListener('pointermove',e=>{if(!S.cdrag)return;e.preventDefault();const p=calPos(e);S.drag=p;S.cals[S.cdrag.lane].pts[S.cdrag.idx]=p;delete S.geoms[S.cdrag.lane];});
+view.addEventListener('pointerup',()=>{if(!S.cdrag)return;const l=S.cdrag.lane;
+  if(!ensureGeom(l)){S.cals[l].pts[S.cdrag.idx]=S.cdrag.orig;delete S.geoms[l];msg('その位置では枠が正しく作れません。元に戻しました。',true);}
+  else{store.set('bl-live-cal',S.cals);msg(`${LN[l]}レーンの角を動かしました。`);}S.cdrag=null;S.drag=null;updateCal();});
+const startCal=l=>{if(S.running)return;$('#calAsk').hidden=true;S.calMode=true;S.calLane=l;S.calTmp=[];S.frozen=document.createElement('canvas');S.frozen.width=S.AW;S.frozen.height=S.AH;
+  S.frozen.getContext('2d').drawImage(video,0,0,S.AW,S.AH);updateCal();};
+$('#calL').onclick=()=>startCal('L');$('#calR').onclick=()=>startCal('R');
+$('#calDist').onchange=()=>{const D=+$('#calDist').value;for(const l of['L','R'])if(S.cals[l])S.cals[l].D=D;S.geoms={};store.set('bl-live-cal',S.cals);updateCal();};
+const calPos=e=>{const r=view.getBoundingClientRect();return[Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];};
+view.addEventListener('pointerdown',e=>{if(!S.calMode)return;e.preventDefault();try{view.setPointerCapture(e.pointerId);}catch(_){}S.drag=calPos(e);});
+view.addEventListener('pointermove',e=>{if(!S.calMode||!S.drag)return;e.preventDefault();S.drag=calPos(e);});
+view.addEventListener('pointercancel',()=>{S.drag=null;});
+view.addEventListener('pointerup',e=>{if(!S.calMode||!S.drag)return;S.drag=null;S.calTmp.push(calPos(e));
+  if(S.calTmp.length===4){const l=S.calLane;S.cals[l]={pts:S.calTmp.slice(),D:+$('#calDist').value};S.calMode=false;S.frozen=null;delete S.geoms[l];
+    if(!ensureGeom(l)){S.cals[l]=null;msg('4点の並びが正しくありません。左下→右下→右上→左上の順でもう一度指定してください。',true);}
+    else{store.set('bl-live-cal',S.cals);msg(`${LN[l]}レーンを設定しました。`+(S.cals[l==='L'?'R':'L']?'「ゲーム開始」で計測を始めます。':`${LN[l==='L'?'R':'L']}レーンも指定してください（片方だけでも始められます）。`));}}
+  updateCal();});
+
+/* ---------- preview ---------- */
+function preview(){
+  const{AW,AH}=S,c=vctx;if(S.frozen)c.drawImage(S.frozen,0,0);else if(video.readyState>=2)c.drawImage(video,0,0,AW,AH);
+  for(const l of['L','R']){const g=S.calMode&&S.calLane===l?null:ensureGeom(l);if(!g)continue;
+    const P=(u,v)=>{const p=BL.applyH(g.Hl,u,v);return[p[0],p[1]]},seg=(a,b,cc,dd)=>{const p=P(a,b),q=P(cc,dd);c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);};
+    c.save();c.lineWidth=1.4;c.strokeStyle='rgba(255,211,77,.8)';c.beginPath();seg(0,0,0,60);seg(39,0,39,60);seg(0,0,39,0);c.stroke();
+    c.setLineDash([3,5]);c.strokeStyle='rgba(255,255,255,.3)';c.beginPath();seg(0,15,39,15);c.stroke();c.setLineDash([]);
+    c.strokeStyle='rgba(255,255,255,.55)';for(const p of g.pins){c.strokeRect(p.x0,p.y0,p.x1-p.x0+1,p.y1-p.y0+1);}
+    const lp=P(19.5,-1.5);c.font='bold 13px system-ui';c.textAlign='center';c.fillStyle='#FFD34D';c.fillText(LN[l],lp[0],Math.min(AH-6,lp[1]+16));
+    // live ball marks
+    const st=S.streams[l];if(S.running&&st&&st.frames.length){const f=st.frames[st.frames.length-1];c.strokeStyle='#FF4D5A';c.lineWidth=2;
+      const ga=ensureGeomA(l),vw=video.videoWidth,vh=video.videoHeight;
+      for(const k of f.cands){if(k.v<0||k.v>60)continue;const[X,Y]=BL.toSrc(ga,k.cx,k.cy,vw,vh),sc=S.AW/vw,rw=k.w*(ga.src?ga.src.sx:vw/ga.AW)*sc;c.beginPath();c.arc(X*sc,Y*sc,rw/2+2,0,7);c.stroke();}}
+    c.restore();}
+  if(S.calMode){const pts=S.calTmp.map(([x,y])=>[x*AW,y*AH]);c.save();
+    if(pts.length>1){c.strokeStyle='#FFD34D';c.lineWidth=2;c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.stroke();}
+    c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';
+    pts.forEach((p,i)=>{c.fillStyle='#FFD34D';c.beginPath();c.arc(p[0],p[1],9,0,7);c.fill();c.fillStyle='#111';c.fillText(i+1,p[0],p[1]+.5);});
+    if(S.drag&&S.frozen){const px=S.drag[0]*AW,py=S.drag[1]*AH,R=Math.round(Math.min(AW,AH)*.2),Z=4,lx=px<AW/2?AW-R-12:R+12,ly=R+12;
+      c.save();c.beginPath();c.arc(lx,ly,R,0,7);c.clip();c.fillStyle='#000';c.fillRect(lx-R,ly-R,2*R,2*R);
+      c.drawImage(S.frozen,px-R/Z,py-R/Z,2*R/Z,2*R/Z,lx-R,ly-R,2*R,2*R);c.restore();
+      c.strokeStyle='#FFD34D';c.lineWidth=2;c.beginPath();c.arc(lx,ly,R,0,7);c.stroke();
+      c.lineWidth=1.2;c.beginPath();c.moveTo(lx-R,ly);c.lineTo(lx-5,ly);c.moveTo(lx+5,ly);c.lineTo(lx+R,ly);c.moveTo(lx,ly-R);c.lineTo(lx,ly-5);c.moveTo(lx,ly+5);c.lineTo(lx,ly+R);c.stroke();
+      c.fillStyle='#FFD34D';c.beginPath();c.arc(px,py,4,0,7);c.fill();}
+    c.restore();}
+  if(!S.calMode&&!S.ballMode&&!S.running){c.save();for(const l of['L','R']){const cc=S.cals[l];if(!cc||!ensureGeom(l))continue;
+      for(const[x,y]of cc.pts){c.fillStyle='rgba(0,0,0,.45)';c.beginPath();c.arc(x*AW,y*AH,7,0,7);c.fill();c.strokeStyle='#FFD34D';c.lineWidth=1.6;c.stroke();}}c.restore();}
+  if(S.cdrag&&S.drag&&video.readyState>=2){const px=S.drag[0]*AW,py=S.drag[1]*AH,R=Math.round(Math.min(AW,AH)*.2),Z=4,lx=px<AW/2?AW-R-12:R+12,ly=R+12,sx=video.videoWidth/AW,sy=video.videoHeight/AH;
+    c.save();c.beginPath();c.arc(lx,ly,R,0,7);c.clip();c.fillStyle='#000';c.fillRect(lx-R,ly-R,2*R,2*R);
+    c.drawImage(video,(px-R/Z)*sx,(py-R/Z)*sy,(2*R/Z)*sx,(2*R/Z)*sy,lx-R,ly-R,2*R,2*R);c.restore();
+    c.save();c.strokeStyle='#FFD34D';c.lineWidth=2;c.beginPath();c.arc(lx,ly,R,0,7);c.stroke();
+    c.lineWidth=1.2;c.beginPath();c.moveTo(lx-R,ly);c.lineTo(lx-5,ly);c.moveTo(lx+5,ly);c.lineTo(lx+R,ly);c.moveTo(lx,ly-R);c.lineTo(lx,ly-5);c.moveTo(lx,ly+5);c.lineTo(lx,ly+R);c.stroke();c.restore();}
+  if(S.ballPend){c.save();c.strokeStyle='#FFD34D';c.lineWidth=2.5;c.beginPath();c.arc(S.ballPend.x,S.ballPend.y,S.ballPend.r,0,7);c.stroke();c.restore();}
+  requestAnimationFrame(preview);
+}
+
+/* ---------- live analysis ---------- */
+function startGame(){if(S.ballMode)endBall();
+  const lanes=['L','R'].filter(l=>ensureGeom(l));if(!lanes.length)return;
+  S.streams={};const thr=+$('#sens').value;prepareROI();
+  for(const l of lanes)S.streams[l]=BL.createStream(ensureGeomA(l),{lane:l,thr,crops:true,el:video,srcW:video.videoWidth,srcH:video.videoHeight,balls});
+  GM.evs=[];GM.opts={format:$('#fmt').value,person:{},pins:{},names:{},fill:{},skipQ:{}};GM.built=null;S.lastId=null;
+  S.running=true;S.t0=performance.now()/1000;S.frames=0;S.fpsWin=[];
+  if($('#recOn').checked&&window.MediaRecorder){try{const mt=['video/mp4','video/webm;codecs=vp9','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));
+    S.chunks=[];S.rec=new MediaRecorder(S.cam,mt?{mimeType:mt}:undefined);S.rec.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};S.rec.start(1000);}catch(_){S.rec=null;}}
+  $('#runBtn').textContent='ゲーム終了';$('#liveTag').classList.add('on');$('#calL').disabled=$('#calR').disabled=$('#autoBtn').disabled=true;$('#calAsk').hidden=true;$('#exportBtn').disabled=true;$('#recBtn').hidden=true;
+  const z=roi?(roi.AW/roi.w)/(S.AW/video.videoWidth):1;msg('計測中です。カメラを動かさないでください。'+(z>1.15?`（レーン周辺を${z.toFixed(1)}倍に拡大して解析中）`:''));renderGame();
+  if('requestVideoFrameCallback' in HTMLVideoElement.prototype)video.requestVideoFrameCallback(onFrame);else requestAnimationFrame(()=>onFrame(performance.now()));
+  S.rebuildTimer=setInterval(()=>{if(GM.evs.length)rebuild();},2000);
+}
+function restartStreams(){const thr=+$('#sens').value,old=S.streams;prepareROI();S.streams={};
+  for(const l in old){const st=BL.createStream(ensureGeomA(l),{lane:l,thr,crops:true,el:video,srcW:video.videoWidth,srcH:video.videoHeight,balls});
+    st.readings.push(...old[l].readings);st.events.push(...old[l].events);S.streams[l]=st;}}
+function onFrame(now){
+  if(!S.running)return;const t=now/1000-S.t0;
+  const d=grabA();
+  for(const l in S.streams){const fresh=S.streams[l].push(d,t);for(const ev of fresh)onThrow(ev,l);}
+  S.frames++;S.fpsWin.push(t);while(S.fpsWin.length&&S.fpsWin[0]<t-2)S.fpsWin.shift();
+  if(S.frames%15===0){const fps=S.fpsWin.length/2;$('#stat').textContent=`解析 ${fps.toFixed(0)}コマ/秒 ・ 経過 ${fmtT(t)} ・ ${GM.evs.length}投`;
+    // below ~15 analysed frames a second, balls slip through: lighten the work (smaller zoom area) after a few seconds of it
+    S.slowSec=fps<15&&t>5?(S.slowSec||0)+.5:0;
+    if(S.slowSec>=6&&roiBudget>150000){roiBudget=Math.round(roiBudget*.65);S.slowSec=0;restartStreams();
+      msg(`端末の処理が追いつかないため、解析を軽くしました（${Math.round(roiBudget/1000)}k画素）。`);}
+    $('#stat').classList.toggle('warn',fps<15&&t>5);}
+  if('requestVideoFrameCallback' in HTMLVideoElement.prototype)video.requestVideoFrameCallback(onFrame);else requestAnimationFrame(onFrame);
+}
+function onThrow(ev,lane){
+  ev.id='t'+(GM.evs.length+1);ev.lane=lane;
+  const m=S.streams[lane].measure(ev,defHand());ev.raw=m?m.raw:null;if(m)ev.col=BL.chainColor(m.raw.chain)||ev.col;
+  GM.evs.push(ev);S.lastId=ev.id;rebuild();toast(`${LN[lane]}レーンで投球を検出`);
+}
+function stopGame(){
+  S.running=false;clearInterval(S.rebuildTimer);
+  if(S.rec&&S.rec.state!=='inactive'){S.rec.onstop=()=>{S.recBlob=new Blob(S.chunks,{type:S.rec.mimeType||'video/webm'});const b=$('#recBtn');b.hidden=false;
+      b.textContent=`録画を保存（${(S.recBlob.size/1048576).toFixed(0)} MB）`;};S.rec.stop();}
+  $('#runBtn').textContent='ゲーム開始';$('#liveTag').classList.remove('on');$('#calL').disabled=$('#calR').disabled=$('#autoBtn').disabled=false;
+  rebuild();rememberPeople();$('#exportBtn').disabled=!GM.evs.length;msg(GM.evs.length?'ゲームを終了しました。ピンや投げた人を直してから「記録を書き出す」で保存できます。':'ゲームを終了しました。');
+}
+$('#runBtn').onclick=()=>{if(S.running)stopGame();else startGame();};
+$('#camBtn').onclick=startCamera;
+
+/* ---------- game ---------- */
+function resolveName(p){const nm=GM.opts.names[p.key];if(nm)return nm;
+  const od=GM.orderUsed&&GM.orderUsed.find(x=>x.key===p.key);if(od&&od.named)return{bowlerId:od.bowlerId,name:od.name,hand:od.hand};if(p.bowlerId){const b=people.find(x=>x.id===p.bowlerId);if(b)return{bowlerId:b.id,name:b.name,hand:b.hand};}return null;}
+function rebuild(){
+  if(!GM.evs.length){GM.built=null;renderGame();return;}
+  GM.opts.format=$('#fmt').value;GM.opts.ball=GM.opts.ball||{};
+  for(const e of GM.evs){const ov=GM.opts.ball[e.id];let b=null;
+    if(ov&&ov!=='none')b=balls.find(x=>x.id===ov)||null;else if(!ov){const m=BL.matchBall(e.col,balls);if(m)b=m.ball;}
+    e.ballId=b?b.id:null;e.ballOwner=b?b.bowlerId:null;e.ballSet=!!ov;}
+  const owners={};for(const p of people)owners[p.id]={id:p.id,name:p.name,hand:p.hand||'R'};
+  const readings={};for(const l in S.streams)readings[l]=S.streams[l].readings;
+  const order=orderList();GM.orderUsed=order;
+  const B=BL.buildGame(GM.evs,readings,Object.assign({},GM.opts,{known:people.filter(p=>BL.isForm(p.sig)).map(p=>({id:p.id,name:p.name,hand:p.hand,sig:p.sig})),owners,order}));
+  for(const p of B.persons){const nm=resolveName(p),od=order&&order.find(x=>x.key===p.key);p.handUse=(GM.opts.names[p.key]&&GM.opts.names[p.key].hand)||(od&&od.hand)||(nm&&nm.hand)||p.hand||defHand();if(nm&&nm.name)p.label=nm.name;
+  }
+  for(const th of B.throws){const p=B.persons.find(x=>x.key===th.person),hand=p?p.handUse:defHand();th.ev=GM.evs.find(e=>e.id===th.id)||{};th.eligible=th.lane===BL.measureLane(hand);
+    th.res=th.eligible&&th.ev.raw?BL.computeResults(th.ev.raw,hand):null;th.sum=th.res?BL.summarize(th.res):null;th.handUse=hand;if(th.standingBefore==null)th.standingBefore=10;}
+  GM.built=B;renderGame();renderLast();
+}
+function sheetHTML(p){
+  const fr=p.score.frames,thBy={};p.throws.forEach(t=>thBy[t.rollIndex]=t);
+  return `<div class="sheetwrap"><div class="sheet">${fr.map((f,i)=>{
+    const ft=f.idx.map(x=>thBy[x]).find(Boolean),lane=ft?ft.lane:null,boxes=i<9?2:3;let rolls='';
+    for(let k=0;k<boxes;k++){const ri=f.idx[k],th=ri!=null?thBy[ri]:null,m=f.marks[k]??'';
+      rolls+=th?`<button type="button" class="roll ${th.conf==='set'?'set':th.conf!=='mid'?'low':''}" data-ev="${th.id}" aria-label="${i+1}フレーム ${k+1}投目 ${m}">${esc(m)}</button>`:m?`<span class="roll auto" title="撮り逃した投球を自動で補完">${esc(m)}</span>`:`<span class="roll"></span>`;}
+    return `<div class="fr"><div class="fn">${i+1}${lane?`<small>${LN[lane]}</small>`:''}</div><div class="rolls">${rolls}</div><div class="ft">${f.total??''}</div></div>`;}).join('')}</div></div>`;
+}
+// live: no video to seek back to, so questions come without a snapshot
+const QIMG=false;function drawQImgs(){}
+/* ---------- questions: what the video could not settle ---------- */
+const QTXT={pins:'ピンが前後に重なっていて、倒れた本数を決めきれません。',strike:'ストライクに見えますが、ピンが残っているようにも見えます。',missing:'この投球が映像で見つかりませんでした（ガターなどで見えなかった可能性があります）。'};
+function qPerson(q){const B=GM.built;const p=B&&B.persons.find(x=>x.key===q.person);return p?p.label:q.person;}
+function answerQ(q,v){if(q.kind==='missing'){GM.opts.fill=GM.opts.fill||{};GM.opts.fill[q.fk]=v;}else{GM.opts.pins[q.evId]=v;}rebuild();}
+function skipQ(q){GM.opts.skipQ=GM.opts.skipQ||{};GM.opts.skipQ[q.qid]=true;renderQuestions();}
+function renderQuestions(){
+  const box=$('#qBox'),B=GM.built;if(!box)return;
+  const qs=B?(B.questions||[]).filter(q=>!(GM.opts.skipQ&&GM.opts.skipQ[q.qid])):[];
+  box.hidden=!qs.length;if(!qs.length){box.innerHTML='';return;}
+  box.innerHTML=`<div class="qhead"><b>確認してください（${qs.length}件）</b><span class="foot">答えるとスコアがすぐ直ります。分からなければ「このまま」で自動の値を使います。</span></div>`+
+    qs.map((q,i)=>`<div class="qrow" data-i="${i}">
+      ${QIMG?`<canvas class="qimg" width="180" height="70" data-i="${i}" aria-label="ピン台の様子"></canvas>`:''}
+      <div class="qmain"><div class="qwho">${esc(qPerson(q))}・${q.frame+1}フレーム・${q.ball+1}投目${q.lane?`（${LN[q.lane]}レーン）`:''}</div>
+        <div class="qtxt">${QTXT[q.kind]||''}倒れたピンは何本でしたか？</div>
+        <div class="qopts">${q.options.map(v=>`<button type="button" class="qbtn${v===q.guess?' guess':''}" data-i="${i}" data-v="${v}">${v===10&&q.kind==='strike'?'ストライク':v+'本'}</button>`).join('')}
+          <button type="button" class="btn text qskip" data-i="${i}">このまま</button></div></div></div>`).join('');
+  box.querySelectorAll('.qbtn').forEach(b=>b.onclick=()=>answerQ(qs[+b.dataset.i],+b.dataset.v));
+  box.querySelectorAll('.qskip').forEach(b=>b.onclick=()=>skipQ(qs[+b.dataset.i]));
+  if(QIMG)drawQImgs(qs);
+}
+
+function renderGame(){try{renderQuestions();}catch(_){}
+  const B=GM.built;$('#gameBadge').textContent=B?`${B.throws.length}投・${B.persons.length}人`:'0投';
+  if(!B){$('#personList').innerHTML='<p class="hint">投球を検出すると、投げた人ごとのスコア表がここに出ます。投球順と体のフォルムから、投げた人を割り当てます。</p>';
+    $('#gThrows').innerHTML='<tr><td colspan="10" style="color:var(--muted)">まだ投球がありません</td></tr>';return;}
+  const active=document.activeElement;if(active&&active.closest&&active.closest('#personList,#gThrows')&&active.tagName!=='BUTTON')return; // don't redraw under an open picker
+  const opts=sel=>people.map(b=>`<option value="${esc(b.id)}"${sel===b.id?' selected':''}>${esc(b.name)}</option>`).join('');
+  $('#personList').innerHTML=B.persons.map(p=>{const nm=resolveName(p),bid=nm&&nm.bowlerId,isNew=nm&&!nm.bowlerId&&nm.name,total=p.score.total!=null?p.score.total:p.score.partial;
+    return `<div class="pcard"><div class="pcard-head">
+      <select class="pwho" data-key="${esc(p.key)}" aria-label="${esc(p.label)}は誰か"><option value="">${esc((nm&&nm.name?nm.name:p.label)+'（名前を選ぶ）')}</option>${opts(bid)}<option value="__new"${isNew?' selected':''}>${isNew?'新規：'+esc(nm.name):'＋ 新しい人'}</option></select>
+      <div class="seg mini" role="radiogroup" aria-label="投げ手">${['R','L'].map(h=>`<button type="button" role="radio" aria-checked="${p.handUse===h}" data-key="${esc(p.key)}" data-h="${h}">${h==='R'?'右投げ':'左投げ'}</button>`).join('')}</div>
+      <span class="ptotal"><small>${p.score.total!=null?'スコア':'途中'}</small>${total}</span></div>
+      <div class="pflags">${GM.orderUsed?'<span class="chip ok">投球順で割り当て</span>':p.auto?`<span class="chip ok">${p.autoBy==='ball'?'ボールで自動判定':'フォルムで自動判定'}</span>`:''}${p.laneWarn?`<span class="chip ng">レーンの順番が${GM.opts.format==='US'?'アメリカン':'ヨーロピアン'}方式と合いません</span>`:''}<span class="chip mut">ボール計測：${LN[BL.measureLane(p.handUse)]}レーン</span></div>
+      ${sheetHTML(p)}</div>`;}).join('');
+  const ppl=B.persons.map(p=>`<option value="${esc(p.key)}">${esc(p.label)}</option>`).join('');
+  $('#gThrows').innerHTML=B.throws.map((th,i)=>{const s=th.sum,max=th.standingBefore;
+    const pins=`<select class="tsel tpins" data-ev="${th.id}" aria-label="倒したピン"><option value="auto">${th.conf==='set'?'自動に戻す':'自動 '+(th.knocked??'?')}</option>${Array.from({length:max+1},(_,k)=>`<option value="${k}"${th.conf==='set'&&th.knocked===k?' selected':''}>${k}本</option>`).join('')}</select>`;
+    const metr=!th.eligible?`<td class="num na" colspan="4">対象外（${th.handUse==='R'?'右':'左'}投げは${LN[BL.measureLane(th.handUse)]}レーン）</td>`:!s?`<td class="num na" colspan="4">ボールを追跡できず</td>`
+      :`<td class="num">${s.speedKmh??'—'}</td><td class="num">${s.rpm??'—'}${s.rpm&&s.rpmConf==='低'?'<span class="est">低</span>':''}</td><td class="num">${s.spatBoard??'—'}</td><td class="num">${s.bpBoard??'—'}</td>`;
+    return `<tr><td class="num">${i+1}</td><td class="mono">${fmtT(th.tRelease)}</td><td>${LN[th.lane]}</td>
+      <td><select class="tsel tperson" data-ev="${th.id}" aria-label="投げた人">${ppl.replace(`value="${esc(th.person)}"`,`value="${esc(th.person)}" selected`)}<option value="__other">別の人物</option></select></td>
+      <td><select class="tsel tball" data-ev="${th.id}" aria-label="ボール"><option value="">${th.ev.ballId&&!th.ev.ballSet?'自動：'+esc((balls.find(b=>b.id===th.ev.ballId)||{}).name||''):'自動：不明'}</option>${balls.map(b=>`<option value="${esc(b.id)}"${th.ev.ballSet&&th.ev.ballId===b.id?' selected':''}>${esc(b.name)}（${esc((people.find(x=>x.id===b.bowlerId)||{}).name||'')}）</option>`).join('')}<option value="none"${GM.opts.ball[th.id]==='none'?' selected':''}>登録外のボール</option></select></td>
+      <td class="num">${pins}${th.conf!=='mid'&&th.conf!=='set'?'<span class="est">要確認</span>':''}</td>${metr}</tr>`;}).join('');
+  $('#gThrows').querySelectorAll('.tball').forEach(el=>el.onchange=()=>{if(el.value)GM.opts.ball[el.dataset.ev]=el.value;else delete GM.opts.ball[el.dataset.ev];el.blur();rebuild();});
+  $('#personList').querySelectorAll('.pwho').forEach(el=>el.onchange=()=>{const key=el.dataset.key,v=el.value;
+    if(v==='__new'){let inp=el.parentNode.querySelector('.pnew');if(!inp){inp=document.createElement('input');inp.type='text';inp.className='pnew';inp.placeholder='名前を入れて確定';inp.maxLength=40;el.after(inp);
+        inp.onchange=()=>{const name=inp.value.trim();if(!name)return;const same=people.find(b=>b.name===name);GM.opts.names[key]=same?{bowlerId:same.id,name:same.name,hand:same.hand}:{name,hand:(GM.opts.names[key]||{}).hand};inp.blur();rebuild();};}
+      inp.focus();return;}
+    if(!v)delete GM.opts.names[key];else{const b=people.find(x=>x.id===v);GM.opts.names[key]={bowlerId:b.id,name:b.name,hand:b.hand||'R'};}el.blur();rebuild();});
+  $('#personList').querySelectorAll('.seg button').forEach(el=>el.onclick=()=>{const key=el.dataset.key,p=B.persons.find(x=>x.key===key),nm=GM.opts.names[key]||resolveName(p)||{};
+    GM.opts.names[key]=Object.assign({},nm,{hand:el.dataset.h});rebuild();});
+  $('#personList').querySelectorAll('.roll[data-ev]').forEach(el=>el.onclick=()=>{const s=$(`#gThrows .tpins[data-ev="${el.dataset.ev}"]`);if(s){s.scrollIntoView({behavior:'smooth',block:'center'});s.focus();}});
+  $('#gThrows').querySelectorAll('.tpins').forEach(el=>el.onchange=()=>{if(el.value==='auto')delete GM.opts.pins[el.dataset.ev];else GM.opts.pins[el.dataset.ev]=+el.value;el.blur();rebuild();});
+  $('#gThrows').querySelectorAll('.tperson').forEach(el=>el.onchange=()=>{let v=el.value;if(v==='__other'){let n=1;while(B.persons.some(p=>p.key==='X'+n)||Object.values(GM.opts.person).includes('X'+n))n++;v='X'+n;}
+    GM.opts.person[el.dataset.ev]=v;el.blur();rebuild();});
+}
+function renderLast(){
+  const B=GM.built;const th=B&&B.throws.find(t=>t.id===S.lastId);
+  const set=(id,v)=>{$(id).innerHTML=v;};
+  if(!th){drawLane(null);return;}
+  const p=B.persons.find(x=>x.key===th.person);
+  $('#lastBadge').textContent=`${fmtT(th.tRelease)}・${LN[th.lane]}レーン・${p?p.label:''}・${th.knocked??'?'}本`;
+  const s=th.sum,r=th.res;
+  if(!s){['#lRpm','#lSpd','#lSpat','#lBp'].forEach(i=>set(i,'—'));set('#lRpmSub',th.eligible?'ボールを追跡できず':`対象外（${th.handUse==='R'?'右':'左'}投げは${LN[BL.measureLane(th.handUse)]}レーンで計測）`);
+    ['#lSpdSub','#lSpatSub','#lBpSub'].forEach(i=>set(i,''));drawLane(null);return;}
+  set('#lRpm',s.rpm??'—');set('#lRpmSub',s.rpm?`<span class="chip ${s.rpmConf==='高'?'ok':s.rpmConf==='中'?'ng':'bad'}">信頼度 ${s.rpmConf}</span>0〜15 ft`:'0〜15 ftで周期を検出できず');
+  set('#lSpd',s.speedKmh??'—');set('#lSpdSub',s.speedKmh?`${(s.speedKmh/KMH*MPH).toFixed(1)} mph`:'');
+  set('#lSpat',s.spatBoard??'—');set('#lSpatSub','15 ft 地点');
+  set('#lBp',s.bpBoard??'—');set('#lBpSub',s.bpFt!=null?`${s.bpFt} ft 地点`:'曲がり始めを検出できず');
+  drawLane(r,th.handUse);
+}
+function drawLane(r,hand){
+  const L=laneBase($('#lane'),hand||defHand(),true),T=L.T;
+  if(!r){laneEmpty(L,'投球後に軌跡を表示');return;}
+  const a=Math.max(0,r.first-EXT),b=Math.min(60,r.last+EXT);
+  if(r.first>a)laneLine(L,[[r.uAt(a).u,a],[r.P[0].us,r.first]],[3,4],T.accent,2);
+  if(r.last<b)laneLine(L,[[r.P[r.P.length-1].us,r.last],[r.uAt(b).u,b]],[3,4],T.accent,2);
+  laneLine(L,r.P.map(p=>[p.us,p.v]),[],T.accent,2.8);laneMarks(L,r.table);
+}
+$('#fmt').onchange=()=>{renderOrder();if(GM.evs.length)rebuild();};
+$('#defHand').onchange=()=>{if(GM.evs.length)rebuild();};
+
+/* ---------- remember people, export ---------- */
+function rememberPeople(){
+  const B=GM.built;if(!B)return;
+  for(const p of B.persons){const nm=resolveName(p);if(!nm||!nm.name)continue;
+    let b=nm.bowlerId?people.find(x=>x.id===nm.bowlerId):people.find(x=>x.name===nm.name);
+    if(!b){b={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:nm.name,hand:p.handUse,sig:null,sigN:0};people.push(b);}
+    b.hand=p.handUse;if(BL.isForm(p.sig)){b.sig=BL.isForm(b.sig)?BL.sigMix(b.sig,b.sigN||1,p.sig):p.sig;b.sigN=(b.sigN||0)+1;}}
+  store.set('bl-live-people',people);
+}
+function throwDoc(r,hand){
+  const R=r.rpm,step=Math.max(1,Math.ceil(r.P.length/80));
+  return{rpm:R&&R.rpm?Math.round(R.rpm):null,rpmConf:R&&R.rpm?R.conf:null,speedKmh:r.v0>0?Math.round(r.v0*KMH*10)/10:null,endKmh:r.vEnd?Math.round(r.vEnd*KMH*10)/10:null,
+    bpBoard:r.bp?BL.boardOf(r.bp.u,hand):null,bpFt:r.bp?Math.round(r.bp.v):null,angle:r.angle?Math.round(r.angle.deg*10)/10:null,angleEst:r.angle?r.angle.est:null,
+    first:Math.round(r.first*10)/10,last:Math.round(r.last*10)/10,
+    boards:r.table.map(t=>({name:t.name,v:t.v,u:t.u==null?null:Math.round(t.u*100)/100,board:t.board,est:t.est,key:t.key})),
+    path:r.P.filter((_,i)=>i%step===0||i===r.P.length-1).map(p=>({u:Math.round(p.us*100)/100,v:Math.round(p.v*100)/100})),note:''};
+}
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
+$('#exportBtn').onclick=()=>{
+  const B=GM.built;if(!B)return;rememberPeople();
+  const unnamed=B.persons.filter(p=>p.key!=='?'&&!(resolveName(p)||{}).name);
+  if(unnamed.length){msg(`${unnamed.map(p=>p.label).join('、')}の名前を選んでから書き出してください。`,true);return;}
+  const now=new Date(),stamp=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  const out={app:'BowlingLabo Live',version:1,createdAt:now.getTime(),format:GM.opts.format,source:`ライブ撮影 ${now.toLocaleDateString('ja-JP')}`,
+    persons:B.persons.filter(p=>p.key!=='?').map(p=>{const nm=resolveName(p),me=people.find(x=>x.name===nm.name);return{name:nm.name,hand:p.handUse,sig:p.sig,
+      balls:me?balls.filter(b=>b.bowlerId===me.id).map(b=>({id:b.id,name:b.name,hist:b.hist,n:b.n||1,thumb:b.thumb})):[],rolls:p.rolls,marks:p.score.frames.map(f=>f.marks.join('')),
+      total:p.score.total,partial:p.score.partial,lanes:p.score.frames.map(f=>{const t=p.throws.find(x=>x.rollIndex===f.idx[0]);return t?t.lane:null;}),
+      throws:p.throws.map(t=>({frame:t.frame+1,pins:t.knocked,lane:t.lane,ballId:t.ev.ballId||null,ballName:t.ev.ballId?(balls.find(b=>b.id===t.ev.ballId)||{}).name||null:null,doc:t.res?Object.assign(throwDoc(t.res,p.handUse),{note:`${t.frame+1}フレーム・${LN[t.lane]}レーン`}):null}))};})};
+  download(new Blob([JSON.stringify(out)],{type:'application/json'}),`bowlinglabo-${stamp}.json`);msg('記録を書き出しました。');
+};
+$('#recBtn').onclick=()=>{if(!S.recBlob)return;const ext=(S.recBlob.type||'').includes('mp4')?'mp4':'webm';download(S.recBlob,`bowlinglabo-${Date.now()}.${ext}`);};
+$('#resetBtn').onclick=()=>{if(S.running)return;GM.evs=[];GM.built=null;S.lastId=null;S.streams={};renderGame();renderLast();$('#lastBadge').textContent='まだありません';$('#exportBtn').disabled=true;msg('新しいゲームの準備ができました。');};
+
+/* ---------- registered balls (kept on this device) ---------- */
+function ballMsg(t,err){msg(t,err);}
+function renderBalls(){
+  $('#ballCount').textContent=balls.length?`登録 ${balls.length}個`:'';
+  $('#ballList').innerHTML=balls.map(b=>`<div class="ballcard"><img src="${esc(b.thumb||'')}" alt="" width="40" height="40"><div class="bc-main"><b>${esc(b.name)}</b><small>${esc((people.find(x=>x.id===b.bowlerId)||{}).name||'')}${(b.n||1)>1?` ・ 見本${b.n}枚`:''}</small></div>
+    <button type="button" class="del${S.armed===b.id?' armed':''}" data-delball="${esc(b.id)}">${S.armed===b.id?'本当に削除':'削除'}</button></div>`).join('');
+  $('#ballList').querySelectorAll('[data-delball]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.delball;if(S.armed!==id){S.armed=id;renderBalls();return;}
+    S.armed=null;balls=balls.filter(b=>b.id!==id);store.set('bl-live-balls',balls);for(const l in S.streams)S.streams[l].setBalls(balls);renderBalls();if(GM.evs.length)rebuild();});
+  $('#ownerNames').innerHTML=people.map(p=>`<option value="${esc(p.name)}"></option>`).join('');
+}
+function ballRadiusAt(x,y){
+  for(const l of['L','R']){const g=ensureGeom(l);if(!g)continue;let r=S.AW*.02,ok=false;
+    for(let k=0;k<4;k++){const L=BL.toLane(g,x,y+r);if(!L||L[0]<-8||L[0]>47||L[1]<-6||L[1]>64){ok=false;break;}r=BL.diamAt(g,L[0],L[1])/2;ok=true;}
+    if(ok&&r>=3)return r;}
+  return null;
+}
+$('#ballBtn').onclick=()=>{if(!S.cam||S.calMode)return;if(!ensureGeom('L')&&!ensureGeom('R')){msg('先に左右どちらかのレーンを4点で指定してください。',true);return;}
+  S.ballMode=true;S.ballPend=null;S.frozen=document.createElement('canvas');S.frozen.width=S.AW;S.frozen.height=S.AH;S.frozen.getContext('2d').drawImage(video,0,0,S.AW,S.AH);
+  S.frozenHi=document.createElement('canvas');S.frozenHi.width=video.videoWidth;S.frozenHi.height=video.videoHeight;S.frozenHi.getContext('2d').drawImage(video,0,0);
+  $('#calHint').hidden=false;$('#calHint').textContent='ボールをレーンの手前に置くか転がした瞬間で止めました。ボールの中心をタップしてください';$('#stage').classList.add('cal');};
+view.addEventListener('pointerup',e=>{if(!S.ballMode||!S.frozen)return;const r=view.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*S.AW,y=(e.clientY-r.top)/r.height*S.AH;
+  const rr=ballRadiusAt(x,y);if(!rr){msg('レーンの上のボールをタップしてください。',true);return;}
+  if(rr<6){msg('ボールが小さすぎます。ファウルライン近くでボールが大きく写るように置いて、もう一度「ボールを登録」を押してください。',true);return;}
+  const d=S.frozen.getContext('2d').getImageData(0,0,S.AW,S.AH).data,hist=BL.colorHist(d,S.AW,S.AH,x,y,rr);if(!hist){msg('色を読み取れませんでした。',true);return;}
+  const tc=$('#ballThumb'),tx=tc.getContext('2d'),sx=S.frozenHi.width/S.AW;tx.clearRect(0,0,64,64);tx.save();tx.beginPath();tx.arc(32,32,31,0,7);tx.clip();
+  tx.drawImage(S.frozenHi,(x-rr)*sx,(y-rr)*sx,2*rr*sx,2*rr*sx,0,0,64,64);tx.restore();
+  S.ballPend={x,y,r:rr,hist,thumb:tc.toDataURL('image/jpeg',.8)};$('#ballForm').hidden=false;$('#calHint').hidden=true;$('#ballName').focus();});
+function endBall(){S.ballMode=false;S.ballPend=null;S.frozen=null;S.frozenHi=null;$('#ballForm').hidden=true;$('#calHint').hidden=true;$('#stage').classList.remove('cal');}
+$('#ballCancel').onclick=endBall;
+$('#ballOwner').oninput=()=>{const p=people.find(x=>x.name===$('#ballOwner').value.trim());$('#ballNames').innerHTML=p?balls.filter(b=>b.bowlerId===p.id).map(b=>`<option value="${esc(b.name)}"></option>`).join(''):'';};
+$('#ballSave').onclick=()=>{const pd=S.ballPend;if(!pd)return;const name=$('#ballName').value.trim(),own=$('#ballOwner').value.trim();
+  if(!name||!own){msg('ボールの名前と持ち主の名前を入れてください。',true);return;}
+  let p=people.find(x=>x.name===own);if(!p){p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:own,hand:defHand(),sig:null,sigN:0};people.push(p);store.set('bl-live-people',people);}
+  const ex=balls.find(b=>b.bowlerId===p.id&&b.name===name);
+  if(ex){ex.hist=BL.sigMix(ex.hist,ex.n||1,pd.hist);ex.n=(ex.n||1)+1;msg(`「${name}」の見本を追加しました。`);}
+  else{balls.push({id:'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,bowlerId:p.id,hist:pd.hist,n:1,thumb:pd.thumb});msg(`「${name}」を登録しました。`);}
+  store.set('bl-live-balls',balls);for(const l in S.streams)S.streams[l].setBalls(balls);$('#ballName').value='';endBall();renderBalls();if(GM.evs.length)rebuild();};
+renderBalls();
+
+/* ---------- bowling order ---------- */
+const ORD={on:true,rows:[]};
+function ordLoad(){try{const v=JSON.parse(localStorage.getItem('bl-live-order')||'null');if(v&&Array.isArray(v.rows)){ORD.on=v.on!==false;ORD.rows=v.rows;}}catch(_){}
+  if(!ORD.rows.length)ORD.rows=[{name:'',lane:'L',hand:'R'},{name:'',lane:'L',hand:'R'},{name:'',lane:'R',hand:'R'},{name:'',lane:'R',hand:'R'}];}
+function ordSave(){try{localStorage.setItem('bl-live-order',JSON.stringify({on:ORD.on,rows:ORD.rows}));}catch(_){}}
+function renderOrder(){
+  $('#ordOn').checked=ORD.on;$('#ordBox').classList.toggle('off',!ORD.on);$('#ordCount').value=String(ORD.rows.length);
+  $('#ordNames').innerHTML=people.map(b=>`<option value="${esc(b.name)}"></option>`).join('');
+  $('#ordRows').innerHTML=ORD.rows.map((r,i)=>`<div class="ordrow">
+    <span class="ordn">${i+1}</span>
+    <input type="text" class="ordname" data-i="${i}" maxlength="40" list="ordNames" value="${esc(r.name)}" placeholder="${i+1}番目の人" aria-label="${i+1}番目の名前" autocomplete="off">
+    <div class="seg mini" role="radiogroup" aria-label="${i+1}番目の開始レーン">${['L','R'].map(l=>`<button type="button" role="radio" data-i="${i}" data-lane="${l}" aria-checked="${r.lane===l}">${l==='L'?'左から':'右から'}</button>`).join('')}</div>
+    <div class="seg mini" role="radiogroup" aria-label="${i+1}番目の投げ手">${['R','L'].map(h=>`<button type="button" role="radio" data-i="${i}" data-hand="${h}" aria-checked="${r.hand===h}">${h==='R'?'右投げ':'左投げ'}</button>`).join('')}</div>
+  </div>`).join('');
+  const nL=ORD.rows.filter(r=>r.lane==='L').length,nR=ORD.rows.length-nL;
+  $('#ordSum').textContent=`左レーン開始 ${nL}人・右レーン開始 ${nR}人。`+($('#fmt').value==='US'?'アメリカン方式では、同じレーンから始めた人どうしが一緒にフレームごとに左右を移ります。':'ヨーロピアン方式では、それぞれ始めたレーンで最後まで投げます。');
+  $('#ordRows').querySelectorAll('.ordname').forEach(el=>el.oninput=()=>{ORD.rows[+el.dataset.i].name=el.value;
+    const b=people.find(x=>x.name===el.value.trim());if(b&&b.hand){ORD.rows[+el.dataset.i].hand=b.hand;}ordSave();});
+  $('#ordRows').querySelectorAll('.ordname').forEach(el=>el.onchange=()=>{renderOrder();if(GM.evs.length)rebuild();});
+  $('#ordRows').querySelectorAll('[data-lane]').forEach(el=>el.onclick=()=>{ORD.rows[+el.dataset.i].lane=el.dataset.lane;ordSave();renderOrder();if(GM.evs.length)rebuild();});
+  $('#ordRows').querySelectorAll('[data-hand]').forEach(el=>el.onclick=()=>{ORD.rows[+el.dataset.i].hand=el.dataset.hand;ordSave();renderOrder();if(GM.evs.length)rebuild();});
+}
+function orderList(){
+  if(!ORD.on)return null;const rows=ORD.rows;if(!rows.length)return null;
+  return rows.map((r,i)=>{const name=r.name.trim()||`${i+1}番目の人`,b=people.find(x=>x.name===name);
+    return{key:'O'+(i+1),name,lane:r.lane,hand:r.hand||(b&&b.hand)||'R',bowlerId:b?b.id:null,sig:b&&BL.isForm(b.sig)?b.sig:null,named:!!r.name.trim()};});
+}
+$('#ordOn').onchange=()=>{ORD.on=$('#ordOn').checked;ordSave();renderOrder();if(GM.evs.length)rebuild();};
+$('#ordCount').onchange=()=>{const n=+$('#ordCount').value;while(ORD.rows.length<n)ORD.rows.push({name:'',lane:ORD.rows.length<n/2?'L':'R',hand:'R'});ORD.rows.length=n;ordSave();renderOrder();if(GM.evs.length)rebuild();};
+$('#ordSplit').onclick=()=>{const n=ORD.rows.length;ORD.rows.forEach((r,i)=>r.lane=i<Math.ceil(n/2)?'L':'R');ordSave();renderOrder();if(GM.evs.length)rebuild();};
+ordLoad();
+
+renderOrder();
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(renderLast,150);});
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',renderLast);}catch(_){}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(renderLast);
+renderGame();renderLast();
+})();
+
+</script>
+</body>
+</html>
