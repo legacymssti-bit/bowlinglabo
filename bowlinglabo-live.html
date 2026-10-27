@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>BowlingLabo Live</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BowlingLabo">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
 <meta name="theme-color" content="#121D25">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -132,7 +140,7 @@ input[type=text]{font:inherit;font-size:14px;padding:7px 10px;border-radius:9px;
 .tiles.small b{font-size:clamp(28px,6vw,36px)}
 .tablewrap{overflow-x:auto}
 .tablewrap table{min-width:540px}
-tbody tr.row{cursor:pointer}
+tbody tr.row{cursor:pointer;display:table-row}
 tr.sel td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .src{display:block;font-size:11px;color:var(--muted);max-width:18em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .del{font:inherit;font-size:12px;border:0;background:transparent;color:var(--muted);cursor:pointer;padding:6px 8px;border-radius:6px;white-space:nowrap}
@@ -201,6 +209,24 @@ td.na{color:var(--muted);font-size:12px;text-align:left}
 .qbtn.guess{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .vhold{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0;pointer-events:none;overflow:hidden}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.sumtable td,.sumtable th{white-space:nowrap}
+.sumtable tr.srow{cursor:pointer}
+.sumtable th:first-child,.sumtable td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:1px 0 0 var(--line)}.sumtable tr.sel td{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.sumtable small.muted{color:var(--muted);font-size:11px;margin-left:2px}
+.sumtiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(min-width:720px){.sumtiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.sumtiles>div{background:var(--sunken);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:1px}
+.sumtiles span{font-size:12px;font-weight:700;color:var(--muted)}
+.sumtiles b{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.sumtiles small{font-size:11.5px;color:var(--muted);min-height:1.2em}
+.charts{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+@media(min-width:720px){.charts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chart{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)}
+.chart-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}.chart-h small{color:var(--muted);font-size:11.5px}
+.chart svg{width:100%;height:auto;display:block;margin-top:4px}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .tick{font-size:10px;fill:var(--muted);font-family:var(--f-mono)}
+.toplinks{display:flex;gap:8px;flex-wrap:wrap}
 
 .live-tag{font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.08em;vertical-align:middle;margin-left:6px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .live-tag.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -212,36 +238,185 @@ td.na{color:var(--muted);font-size:12px;text-align:left}
 .check input{width:18px;height:18px;accent-color:var(--accent)}
 .stat{margin:0;color:var(--muted);min-height:1.2em}
 .laneWrap.one{grid-template-columns:minmax(0,1fr)}
-#view{max-height:70vh}
-
+/* ---- first screen: camera | lane | numbers, scores underneath ---- */
+body{padding:0}
+.more{padding:16px}
+.dash{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:6px;padding:8px;background:var(--bg)}
+.d-cam{grid-column:1/-1;min-width:0;min-height:0}
+.dash .stage{padding:0;min-height:0;height:100%;border-radius:10px}
+#view{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
+.camtag{position:absolute;left:8px;top:8px;display:flex;gap:6px;align-items:center;pointer-events:none}
+.camtag .live-tag{margin:0;background:color-mix(in srgb,var(--surface) 80%,transparent)}
+.camtag .badge{background:color-mix(in srgb,var(--surface) 80%,transparent);font-size:11px}
+.d-lane{grid-column:2;min-height:0;min-width:0;border-radius:8px;overflow:hidden;height:300px}
+.d-lane canvas{display:block}
+.d-stats{grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:5px;min-width:0;min-height:0}
+.d-head{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.brand.mini{color:inherit;text-decoration:none;display:flex;align-items:center;gap:5px;font-size:13px}.brand.mini svg{width:10px;height:18px}
+.d-btns{display:flex;gap:6px}.d-btns .btn{padding:6px 10px;font-size:12.5px;min-height:0}
+.d-save{font-size:10.5px;color:var(--good);font-weight:700;min-height:0}.d-save:empty{display:none}
+.d-last{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dvals{display:flex;flex-direction:column;gap:4px;flex:1;min-height:0;justify-content:space-around}
+.dv{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"num unit" "k k" "sub sub";column-gap:4px;align-items:baseline;background:var(--sunken);border-radius:8px;padding:3px 8px;border-left:3px solid var(--line)}
+.dv.hero{border-left-color:var(--accent)}
+.dv b{grid-area:num;font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:clamp(20px,6.4vh,40px);line-height:1;font-variant-numeric:tabular-nums}
+.dv.hero b{color:var(--accent)}
+.dv small{grid-area:unit;font-size:11px;font-weight:700;color:var(--muted)}
+.dv .k{grid-area:k;font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.2}
+.dv .sub{grid-area:sub;font-size:9.5px;color:var(--muted);line-height:1.2;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.dv .sub:empty{display:none}
+.dv .sub .chip{font-size:9.5px;padding:0 5px}
+.dmsg{margin:0;font-size:11.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.qalert{align-self:flex-start;font-size:12px;font-weight:700;color:var(--accent-ink);background:var(--warn);border-radius:999px;padding:3px 10px;text-decoration:none}
+.d-score{grid-column:1/-1;min-width:0;overflow:auto}
+.d-score .hint{margin:4px 2px;font-size:12px}
+.dscore{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums;background:var(--surface)}
+.dscore th,.dscore td{border:1px solid var(--line);padding:1px 2px;text-align:center;font-size:11px;line-height:1.12}
+.dscore thead th{font-size:10px;color:var(--muted);font-weight:700}
+.dscore .dn{width:5.4em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;font-size:11.5px}
+.dscore .dt{width:3em;font-weight:800;font-size:14px}
+.dscore td .mk{display:block;font-family:var(--f-mono);font-weight:700;font-size:11.5px;min-height:1.1em}
+.dscore td .rt{display:block;font-size:10.5px;color:var(--muted);min-height:1.1em}
+.dscore td.low .mk{background:color-mix(in srgb,var(--warn) 26%,transparent)}
+.dscore tr.cur th,.dscore tr.cur td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.morehint{grid-column:1/-1;text-align:center;font-size:11px;color:var(--muted);text-decoration:none}
+/* phone on its side: everything on one screen */
+@media (orientation:landscape){
+  .dash{grid-template-columns:minmax(0,1fr) clamp(48px,8vw,84px) clamp(140px,22vw,230px);grid-template-rows:minmax(0,1fr) auto auto}
+  .d-cam{grid-column:1;grid-row:1}
+  .d-lane{grid-column:2;grid-row:1;height:auto}
+  .d-stats{grid-column:3;grid-row:1}
+  .d-score{grid-row:2}.morehint{grid-row:3;line-height:1.1}
+}
+@media (orientation:landscape) and (max-height:700px){
+  .dash{height:100vh;height:100dvh;padding:5px 5px 1px;gap:5px;padding-left:max(5px,env(safe-area-inset-left));padding-right:max(5px,env(safe-area-inset-right))}
+  .d-score{max-height:30vh}
+  .brand.mini b{display:none}
+  .d-head{flex-wrap:nowrap}.d-btns{flex:1}.d-btns .btn{flex:1;padding:5px 6px}
+  .dvals{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:4px}
+  .dv{padding:2px 6px;align-content:center;grid-template-columns:auto 1fr;grid-template-areas:"num num" "unit k";min-width:0;overflow:hidden}
+  .dv .k{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dv .sub{display:none}
+  .dv b{font-size:clamp(18px,min(7vh,3.6vw),34px)}
+  .dv small{font-size:10px}.dv .k{font-size:10px}
+  .dmsg{-webkit-line-clamp:2;font-size:10.5px}
+  .dscore th,.dscore td{padding:0 2px}
+  .dscore td .mk{font-size:11px;line-height:1.05}.dscore td .rt{font-size:10px;line-height:1.05}
+  .dscore .dt{font-size:13px}.dscore .dn{font-size:11px}
+}
+@media (orientation:landscape) and (min-height:701px){
+  .dash{max-width:1500px;margin:0 auto;height:min(100vh,900px)}
+  .dv b{font-size:40px}
+}
+/* setup screen: camera on the left, lining-up controls on the right */
+.d-setup{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto}
+.setup-title{margin:0;font-size:16px}
+.setup-steps{margin:0;font-size:12px;color:var(--muted);line-height:1.45}
+.setup-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.setup-acts .btn{padding:6px 10px;font-size:12.5px;min-height:0}
+#goPlay{width:100%}
+.dash:not(.setup) .d-setup{display:none}
+.dash.setup .d-lane,.dash.setup .d-last,.dash.setup .dvals,.dash.setup .d-score,.dash.setup .morehint,.dash.setup #runBtn,.dash.setup .qalert,.dash.setup .brand.mini{display:none}
+.dash.setup ~ .more{display:none}
+.dash.setup .dmsg{-webkit-line-clamp:4}
+.dash.setup .d-head{justify-content:flex-start}
+.dash.setup .d-btns:has(#camBtn[hidden]){display:none}
+.dash.setup .qbox{padding:8px;gap:6px;font-size:12px}
+@media (orientation:landscape){
+  .dash.setup{grid-template-columns:minmax(0,1fr) clamp(220px,32vw,340px);grid-template-rows:minmax(0,1fr)}
+  .dash.setup .d-stats{grid-column:2;grid-row:1}
+}
+.fine{display:flex;flex-direction:column;gap:5px;border:1px solid var(--line);border-radius:10px;padding:5px 7px;background:var(--surface)}
+.fine-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:12px}.fine-head .inline{font-size:11px;color:var(--accent);font-weight:700}
+.fine-row{display:flex;gap:7px;align-items:center}
+.fine-sel{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.lanepick{display:flex}.lanepick button{flex:1;padding:3px 4px;font-size:11.5px}
+.cornerpick{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.cornerpick button{font:inherit;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:var(--sunken);color:var(--ink);border-radius:6px;padding:4px 2px;cursor:pointer}
+.cornerpick button[aria-checked="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dpad{display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(3,30px);gap:3px;flex:0 0 auto}
+.dpad .pad{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--sunken);color:var(--ink);border-radius:7px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;padding:0}
+.dpad .pad:active{background:var(--accent);color:var(--accent-ink)}
+.dpad .pad.step{font-size:11.5px;font-weight:700;background:var(--surface)}
+.d-setup #goPlay{margin-top:auto;flex:0 0 auto}
+@media (orientation:landscape) and (max-height:700px){
+  .dash.setup .d-stats{gap:4px}
+  .d-setup{gap:5px}
+  .setup-title{font-size:14px}
+  .setup-steps{display:none}
+  .setup-acts{gap:4px}.setup-acts .btn{padding:4px 7px;font-size:11.5px}
+  .setup-acts .chip{display:none}
+  #goPlay{padding:8px;font-size:14px}
+  .dash.setup .dmsg{-webkit-line-clamp:2;font-size:10.5px}
+}
+@media (orientation:portrait){.dash .stage{height:auto}#view{width:100%;height:auto}.d-stats{grid-column:1;grid-row:2}.d-lane{grid-row:2}.d-score{grid-row:3}.morehint{grid-row:4}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <svg viewBox="0 0 20 36" aria-hidden="true"><path fill="var(--ink)" d="M10 1.5c3 0 4.2 3 3.4 6-.5 2-1.7 3.1-1.5 5.2.3 3 4.4 6.2 4.4 12.4 0 6.2-3.1 9.4-6.3 9.4s-6.3-3.2-6.3-9.4c0-6.2 4.1-9.4 4.4-12.4.2-2.1-1-3.2-1.5-5.2C5.8 4.5 7 1.5 10 1.5z"/><rect x="7.4" y="10.6" width="5.2" height="1.4" fill="var(--accent)"/><rect x="7.2" y="13" width="5.6" height="1.4" fill="var(--accent)"/></svg>
-      <h1>BowlingLabo <span class="live-tag" id="liveTag">LIVE</span></h1>
+<div class="dash setup" id="dash">
+  <div class="d-cam">
+    <div class="stage" id="stage">
+      <canvas id="view" width="640" height="360" aria-label="カメラ映像"></canvas>
+      <div class="calHint" id="calHint" hidden></div>
+      <div class="toast" id="toast" hidden></div>
+      <div class="camtag"><span class="live-tag" id="liveTag">LIVE</span><span class="badge" id="camBadge">停止中</span></div>
     </div>
-    <p class="lede">スマホを固定して1ゲーム撮影しながら、投球ごとにボールを計測してスコアを付けます。</p>
-  </header>
-
-  <main class="grid">
-    <section class="panel" aria-labelledby="h-cam">
-      <div class="panel-head"><h2 id="h-cam">カメラ</h2><span class="badge" id="camBadge">停止中</span></div>
-      <div class="stage" id="stage">
-        <canvas id="view" width="640" height="360" aria-label="カメラ映像"></canvas>
-        <div class="calHint" id="calHint" hidden></div>
-        <div class="toast" id="toast" hidden></div>
-      </div>
-      <div class="actions">
-        <button class="btn primary" id="camBtn" type="button">カメラを起動</button>
+  </div>
+  <div class="d-lane" id="dlaneBox"><canvas id="dlane" aria-label="直前の投球の軌跡（上から見た図）"></canvas></div>
+  <div class="d-stats">
+    <div class="d-head">
+      <a class="brand mini" href="index.html" aria-label="トップへ"><svg viewBox="0 0 20 36" aria-hidden="true"><path fill="var(--ink)" d="M10 1.5c3 0 4.2 3 3.4 6-.5 2-1.7 3.1-1.5 5.2.3 3 4.4 6.2 4.4 12.4 0 6.2-3.1 9.4-6.3 9.4s-6.3-3.2-6.3-9.4c0-6.2 4.1-9.4 4.4-12.4.2-2.1-1-3.2-1.5-5.2C5.8 4.5 7 1.5 10 1.5z"/><rect x="7.4" y="10.6" width="5.2" height="1.4" fill="var(--accent)"/><rect x="7.2" y="13" width="5.6" height="1.4" fill="var(--accent)"/></svg><b>BowlingLabo</b></a>
+      <div class="d-btns"><button class="btn primary" id="camBtn" type="button">カメラを起動</button><button class="btn primary" id="runBtn" type="button" disabled>ゲーム開始</button><button class="btn" id="saveLocal2" type="button" hidden>記録に保存</button></div>
+    </div>
+    <div class="d-last" id="lastBadge">直前の投球：まだありません</div>
+    <div class="d-save" id="saveState"></div>
+    <div class="dvals">
+      <div class="dv"><b id="lSpd">—</b><small>km/h</small><span class="k">初速</span><span class="sub" id="lSpdSub"></span></div>
+      <div class="dv hero"><b id="lRpm">—</b><small>rpm</small><span class="k">回転数</span><span class="sub" id="lRpmSub"></span></div>
+      <div class="dv"><b id="lBp">—</b><small>枚目</small><span class="k">BP</span><span class="sub" id="lBpSub"></span></div>
+      <div class="dv"><b id="lSpat">—</b><small>枚目</small><span class="k">スパット</span><span class="sub" id="lSpatSub"></span></div>
+    </div>
+    <div class="d-setup" id="setupPanel">
+      <h2 class="setup-title">① レーンの位置合わせ</h2>
+      <p class="setup-steps">ペアの2レーン・ピン・ファウルラインが入るように固定してください。枠は自動で合わせます。</p>
+      <div class="actions setup-acts">
         <button class="btn" id="autoBtn" type="button" disabled>自動で位置合わせ</button>
         <button class="btn" id="calL" type="button" disabled>左レーンの4点</button><span class="chip ng" id="calStateL">未設定</span>
         <button class="btn" id="calR" type="button" disabled>右レーンの4点</button><span class="chip mut" id="calStateR">未設定</span>
       </div>
       <div class="qbox" id="calAsk" hidden><p id="calAskText" style="margin:0"></p>
         <div class="row"><button class="btn primary" id="calOk" type="button">合っている</button><button class="btn" id="calRedo" type="button">4点で指定し直す</button></div></div>
+      <div class="fine" id="fine" hidden>
+        <div class="fine-head"><b>微調整</b><span class="inline" id="fineLabel"></span></div>
+        <div class="fine-row">
+          <div class="dpad">
+            <span></span><button type="button" class="pad" data-dx="0" data-dy="-1" aria-label="上へ">▲</button><span></span>
+            <button type="button" class="pad" data-dx="-1" data-dy="0" aria-label="左へ">◀</button><button type="button" class="pad step" id="fineStep" aria-label="動かす幅を切り替え" title="動かす幅（細／粗）">細</button><button type="button" class="pad" data-dx="1" data-dy="0" aria-label="右へ">▶</button>
+            <span></span><button type="button" class="pad" data-dx="0" data-dy="1" aria-label="下へ">▼</button><span></span>
+          </div>
+          <div class="fine-sel">
+            <div class="seg mini lanepick" role="radiogroup" aria-label="レーン"><button type="button" role="radio" data-fl="L" aria-checked="true">左</button><button type="button" role="radio" data-fl="R" aria-checked="false">右</button></div>
+            <div class="cornerpick" role="radiogroup" aria-label="角">
+              <button type="button" role="radio" data-fc="3" aria-checked="false">奥左</button><button type="button" role="radio" data-fc="2" aria-checked="false">奥右</button>
+              <button type="button" role="radio" data-fc="0" aria-checked="true">手前左</button><button type="button" role="radio" data-fc="1" aria-checked="false">手前右</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn primary big" id="goPlay" type="button" disabled>この位置で始める ▶</button>
+    </div>
+    <p class="msg dmsg" id="msg" role="status">「カメラを起動」を押すと、ペアの左右のレーンの位置を自動で合わせます。</p>
+    <a class="qalert" id="qAlert" href="#qBox" hidden></a>
+  </div>
+  <div class="d-score" id="dashScore"><p class="hint">投球を検出すると、ここに全員のスコアが出ます。</p></div>
+  <a class="morehint" href="#more">▼ スクロールで設定・修正</a>
+</div>
+<div class="wrap more" id="more">
+  <main class="grid">
+    <div class="qbox" id="qBox" hidden></div>
+    <section class="panel" aria-labelledby="h-set">
+      <div class="panel-head"><h2 id="h-set">カメラとレーンの設定</h2></div>
+      <div class="row"><button class="btn" id="backSetup" type="button">レーンの位置を合わせ直す</button></div>
       <div class="fields">
         <div class="field"><label for="fmt">投球方式</label><select id="fmt"><option value="US">アメリカン（交互）</option><option value="EU">ヨーロピアン（同じレーン）</option></select></div>
         <div class="field"><label for="defHand">わからない人の投げ手</label><select id="defHand"><option value="R">右投げ</option><option value="L">左投げ</option></select></div>
@@ -258,22 +433,7 @@ td.na{color:var(--muted);font-size:12px;text-align:left}
       </div>
       <div class="balls" id="ballList"></div>
       <label class="check"><input type="checkbox" id="recOn" checked> 撮影した映像も録画する（終了後に保存できます）</label>
-      <div class="row">
-        <button class="btn primary big" id="runBtn" type="button" disabled>ゲーム開始</button>
-      </div>
-      <p class="msg" id="msg" role="status">「カメラを起動」を押すと、ペアの左右のレーンの位置を自動で合わせます。</p>
       <p class="mono stat" id="stat"></p>
-    </section>
-
-    <section class="panel" aria-labelledby="h-last">
-      <div class="panel-head"><h2 id="h-last">直前の投球</h2><span class="badge" id="lastBadge">まだありません</span></div>
-      <div class="tiles">
-        <div class="tile hero"><span class="k">回転数</span><span class="v"><b id="lRpm">—</b><small>rpm</small></span><span class="sub" id="lRpmSub"></span></div>
-        <div class="tile"><span class="k">初速</span><span class="v"><b id="lSpd">—</b><small>km/h</small></span><span class="sub" id="lSpdSub"></span></div>
-        <div class="tile"><span class="k">スパットの板目</span><span class="v"><b id="lSpat">—</b><small>枚目</small></span><span class="sub" id="lSpatSub"></span></div>
-        <div class="tile"><span class="k">ブレイクポイント</span><span class="v"><b id="lBp">—</b><small>枚目</small></span><span class="sub" id="lBpSub"></span></div>
-      </div>
-      <div class="laneWrap one"><div class="laneBox"><canvas id="lane" aria-label="直前の投球の軌跡"></canvas></div></div>
     </section>
 
     <section class="panel" aria-labelledby="h-order">
@@ -288,9 +448,12 @@ td.na{color:var(--muted);font-size:12px;text-align:left}
       </div>
       <p class="foot">投球順を使わないときは、体のフォルム（シルエット）だけで投げた人を見分けます。</p>
     </section>
+    <section class="panel" aria-labelledby="h-lane">
+      <div class="panel-head"><h2 id="h-lane">直前の投球の軌跡</h2><span class="badge" id="lastBadge2">まだありません</span></div>
+      <div class="laneWrap one"><div class="laneBox"><canvas id="lane" aria-label="直前の投球の軌跡"></canvas></div></div>
+    </section>
     <section class="panel game" aria-labelledby="h-game">
-      <div class="panel-head"><h2 id="h-game">スコア</h2><span class="badge" id="gameBadge">0投</span></div>
-      <div class="qbox" id="qBox" hidden></div>
+      <div class="panel-head"><h2 id="h-game">投げた人とスコアの修正</h2><span class="badge" id="gameBadge">0投</span></div>
       <div class="persons" id="personList"><p class="hint">投球を検出すると、投げた人ごとのスコア表がここに出ます。投球順と体のフォルムから、投げた人を割り当てます。</p></div>
       <p class="foot">色の付いたマスは、ピン数の自動判定に自信がない投球です。タップすると投球一覧の修正欄に移動します。</p>
       <h3>投球一覧</h3>
@@ -298,11 +461,13 @@ td.na{color:var(--muted);font-size:12px;text-align:left}
         <thead><tr><th class="num">#</th><th>時間</th><th>レーン</th><th>投げた人</th><th>ボール</th><th class="num">倒したピン</th><th class="num">初速</th><th class="num">回転数</th><th class="num">スパット</th><th class="num">BP</th></tr></thead>
         <tbody id="gThrows"><tr><td colspan="10" style="color:var(--muted)">まだ投球がありません</td></tr></tbody></table></div>
       <div class="row" id="endRow">
-        <button class="btn" id="exportBtn" type="button" disabled>記録を書き出す（JSON）</button>
+        <button class="btn" id="saveLocal" type="button" disabled>今すぐ保存</button><span class="inline" id="saveState2"></span>
+        <button class="btn" id="exportBtn" type="button" disabled>ファイルに書き出す</button>
+        <a class="btn text" href="bowlinglabo.html">記録・集計を見る</a>
         <button class="btn" id="recBtn" type="button" hidden>録画を保存</button>
         <button class="btn text" id="resetBtn" type="button">新しいゲーム</button>
       </div>
-      <p class="foot">書き出したファイルは、claude.ai の BowlingLabo（読込版）の「ライブ版の記録を読み込む」で人物ごとの記録に保存できます。名前を付けた人のフォルムはこの端末に覚えておき、次回から自動で見分けます。</p>
+      <p class="foot">ゲームは1ゲームごとに自動で、このスマホの記録（「記録・集計を見る」のページ）に保存されます。ゲーム中も投球のたびに途中経過を保存するので、途中で画面を閉じても消えません。ピンや名前を後から直すと、保存した記録も自動で直ります。別の端末へ移すときは「ファイルに書き出す」か、記録ページのバックアップを使ってください。名前を付けた人のフォルムはこの端末に覚えておき、次回から自動で見分けます。</p>
     </section>
   </main>
 </div>
@@ -1142,7 +1307,84 @@ function findLanes(frames,W,H,opt){
   return all;
 }
 
-return{autoLanes,medianImage,findLanes,scoreByOrder,pinPairs,pFirst,turnSeq,assignLane,pStrike,formSig,formSim,isForm,FORM_N,laneROI,toSrc,colorBin,colorHist,histSim,meanHist,matchBall,ballLut,refineBlob,frameCands,chainColor,
+/* ---------- records kept on this device ----------
+   Same small API the pages use for the claude.ai database (collection/doc/set/update/delete/add/onSnapshot),
+   stored in the browser's IndexedDB (localStorage if that is unavailable). Pages on the same site share it,
+   and another open tab hears about changes through a BroadcastChannel. */
+const LDB_NAME='bowlinglabo',LDB_STORE='docs';
+let ldbPromise=null;
+function localDB(){if(!ldbPromise)ldbPromise=openLocalDB();return ldbPromise;}
+async function openLocalDB(){
+  const mem=new Map(),subs=[];let idb=null,lsKey='bowlinglabo-db';
+  try{if(typeof indexedDB!=='undefined')idb=await new Promise((res,rej)=>{const rq=indexedDB.open(LDB_NAME,1);
+    rq.onupgradeneeded=()=>{rq.result.createObjectStore(LDB_STORE,{keyPath:'path'});};rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);
+    setTimeout(()=>rej(new Error('idb timeout')),4000);});}catch(_){idb=null;}
+  const loadAll=async()=>{mem.clear();
+    if(idb){await new Promise((res)=>{const tx=idb.transaction(LDB_STORE,'readonly'),rq=tx.objectStore(LDB_STORE).getAll();rq.onsuccess=()=>{for(const r of rq.result||[])mem.set(r.path,r.data);res();};rq.onerror=()=>res();});}
+    else{try{const o=JSON.parse(localStorage.getItem(lsKey)||'{}');for(const k in o)mem.set(k,o[k]);}catch(_){}}};
+  await loadAll();
+  // ask the browser not to clear these records when space runs low
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(_){}
+  let bc=null;try{bc=new BroadcastChannel('bowlinglabo-db');bc.onmessage=async()=>{await loadAll();fire(false);};}catch(_){}
+  let pend=Promise.resolve();
+  const persist=(path,data)=>{pend=pend.then(()=>new Promise(res=>{
+    if(idb){const tx=idb.transaction(LDB_STORE,'readwrite'),st=tx.objectStore(LDB_STORE);data===undefined?st.delete(path):st.put({path,data});tx.oncomplete=()=>res();tx.onerror=()=>res();tx.onabort=()=>res();}
+    else{try{localStorage.setItem(lsKey,JSON.stringify(Object.fromEntries(mem)));}catch(_){}res();}}));return pend;};
+  let ft=null;const fire=(tell)=>{clearTimeout(ft);ft=setTimeout(()=>{for(const s of subs)s.fn(snap(s.path));},0);if(tell&&bc){try{bc.postMessage(1);}catch(_){}}};
+  const snap=path=>{const n=path.split('/').length+1,docs=[];for(const[k,v]of mem)if(k.startsWith(path+'/')&&k.split('/').length===n)docs.push({id:k.slice(path.length+1),exists:true,data:()=>v});return{docs,size:docs.length,empty:!docs.length};};
+  const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  const docRef=path=>({id:path.split('/').pop(),path,
+    get:async()=>({exists:mem.has(path),data:()=>mem.get(path)}),
+    set:async d=>{const v=JSON.parse(JSON.stringify(d));mem.set(path,v);fire(false);await persist(path,v);fire(true);},
+    update:async d=>{if(!mem.has(path))throw{code:'not_found'};const v=Object.assign({},mem.get(path),JSON.parse(JSON.stringify(d)));mem.set(path,v);fire(false);await persist(path,v);fire(true);},
+    delete:async()=>{mem.delete(path);fire(false);await persist(path,undefined);fire(true);}});
+  const colRef=path=>({path,doc:id=>docRef(path+'/'+(id||newId())),add:async d=>{const r=docRef(path+'/'+newId());await r.set(d);return r;},
+    onSnapshot:(fn)=>{const s={path,fn};subs.push(s);setTimeout(()=>fn(snap(path)),0);return()=>{const i=subs.indexOf(s);if(i>=0)subs.splice(i,1);};}});
+  return{local:true,kind:idb?'indexeddb':'localstorage',collection:colRef,doc:docRef,
+    // everything as one object, for a backup file
+    dump:()=>{const o={};for(const[k,v]of mem)o[k]=v;return o;},
+    usage:async()=>{try{return navigator.storage&&navigator.storage.estimate?await navigator.storage.estimate():null;}catch(_){return null;}},
+    persisted:async()=>{try{return navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted():null;}catch(_){return null;}}};
+}
+const BACKUP_COLS=['bowlers','throws','games','balls'];
+// backup file: {app:'BowlingLabo',kind:'backup',version:1,createdAt,data:{bowlers:{id:doc},...}}
+function makeBackup(lists){const data={};for(const c of BACKUP_COLS){data[c]={};for(const d of lists[c]||[]){const{id,...rest}=d;data[c][id]=rest;}}
+  return{app:'BowlingLabo',kind:'backup',version:1,createdAt:Date.now(),data};}
+// write a backup into a database; records with the same id are replaced, others are kept
+async function restoreBackup(db,j){
+  if(!j||j.app!=='BowlingLabo'||j.kind!=='backup'||!j.data)throw new Error('format');let n=0;
+  for(const c of BACKUP_COLS){const m=j.data[c]||{};for(const id in m){await db.collection(c).doc(id).set(m[id]);n++;}}return n;}
+// a game recorded by the live page goes into the records: people by name, balls by owner and name
+async function importLive(db,j,cur){
+  if(!j||j.app!=='BowlingLabo Live'||!Array.isArray(j.persons))throw new Error('format');
+  const now=Date.now(),bowlers=(cur.bowlers||[]).slice(),balls=(cur.balls||[]).slice();let n=0,nt=0;const ballMap={},made=[];
+  for(const p of j.persons){if(!p.name)continue;let b=bowlers.find(x=>x.name===p.name),id=b&&b.id;
+    if(!id){const ref=db.collection('bowlers').doc();const d={name:p.name,hand:p.hand||'R',createdAt:now,...(Array.isArray(p.sig)?{sig:p.sig,sigN:1}:{})};await ref.set(d);id=ref.id;bowlers.push({id,...d});}
+    else if(Array.isArray(p.sig))await db.doc('bowlers/'+id).update({sig:Array.isArray(b.sig)?sigMix(b.sig,b.sigN||1,p.sig):p.sig,sigN:(b.sigN||0)+1});
+    for(const bb of p.balls||[]){if(!bb.name||!Array.isArray(bb.hist))continue;const ex=balls.find(x=>x.bowlerId===id&&x.name===bb.name);
+      if(ex){ballMap[bb.id]=ex.id;}else{const d={name:bb.name,bowlerId:id,hist:bb.hist,n:bb.n||1,thumb:bb.thumb||'',createdAt:now};const ref=await db.collection('balls').add(d);ballMap[bb.id]=ref.id;balls.push({id:ref.id,...d});}}
+    const gref=db.collection('games').doc();made.push('games/'+gref.id);
+    await gref.set({bowlerId:id,createdAt:j.createdAt||now,source:j.source||'ライブ撮影',format:j.format||'US',rolls:p.rolls||[],marks:p.marks||[],total:p.total??null,partial:p.partial??null,lanes:p.lanes||[]});
+    let k=0;for(const t of p.throws||[]){if(!t.doc)continue;const tr=await db.collection('throws').add(Object.assign({},t.doc,{bowlerId:id,createdAt:(j.createdAt||now)+(++k),source:j.source||'ライブ撮影',hand:p.hand||'R',gameId:gref.id,frame:t.frame,pins:t.pins,lane:t.lane,ballId:t.ballId?ballMap[t.ballId]||null:null,ballName:t.ballName||null}));made.push('throws/'+tr.id);nt++;}
+    n++;}
+  return{n,nt,made};
+}
+
+// hand a file to the person: the share sheet on iPhone/iPad ("ファイルに保存"), a normal download elsewhere
+function isIOS(){try{return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}catch(_){return false;}}
+function saveFile(blob,name){
+  // inside claude.ai the page cannot download by itself: the viewer's own save prompt does it
+  try{if(typeof window!=='undefined'&&window.claude&&window.claude.use)return window.claude.use('downloads').then(dl=>{
+    if(!dl)return saveFileWeb(blob,name);return dl.save({filename:name,data:blob}).then(()=>true,()=>false);},()=>saveFileWeb(blob,name));}catch(_){}
+  return saveFileWeb(blob,name);}
+function saveFileWeb(blob,name){
+  try{if(isIOS()&&typeof File!=='undefined'&&navigator.canShare){const f=new File([blob],name,{type:blob.type||'application/octet-stream'});
+    if(navigator.canShare({files:[f]})){return navigator.share({files:[f],title:name}).then(()=>true,e=>{if(e&&e.name==='AbortError')return false;anchorSave(blob,name);return true;});}}}catch(_){}
+  anchorSave(blob,name);return Promise.resolve(true);}
+function anchorSave(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.rel='noopener';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},8000);}
+function csvOf(rows){return '\ufeff'+rows.map(r=>r.map(v=>{if(v==null)return '';const t=String(v);return /[",\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;}).join(',')).join('\r\n');}
+
+return{saveFile,isIOS,csvOf,localDB,makeBackup,restoreBackup,importLive,BACKUP_COLS,autoLanes,medianImage,findLanes,scoreByOrder,pinPairs,pFirst,turnSeq,assignLane,pStrike,formSig,formSim,isForm,FORM_N,laneROI,toSrc,colorBin,colorHist,histSim,meanHist,matchBall,ballLut,refineBlob,frameCands,chainColor,
   BOARD_IN,KMH,MPH,RPM_V0,RPM_V1,EXT,solveH,applyH,linfit,theilSen,buildGeom,toLane,diamAt,buffers,findBlobs,evalBlob,cropVec,bestChain,
   boardOf,computeResults,rpmEst,summarize,pinLayout,readPins,pinRef,pinState,scoreGame,rackBefore,estimatePins,createStream,
   personBox,personSig,sigSim,sigMix,buildGame,measureLane};
@@ -1204,6 +1446,7 @@ const fmtT=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 function msg(t,err){const m=$('#msg');m.textContent=t;m.classList.toggle('err',!!err);}
 function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,2200);}
 const defHand=()=>$('#defHand').value;
+if(BL.isIOS()){const r=$('#recOn');if(r){r.checked=false;r.parentNode.lastChild.textContent=' 撮影した映像も録画する（iPhoneは長時間だと止まることがあるので初期はオフ）';}}
 
 /* ---------- camera ---------- */
 async function startCamera(){
@@ -1215,7 +1458,7 @@ async function startCamera(){
   const w=video.videoWidth,h=video.videoHeight,k=Math.min(1,640/Math.max(w,h));S.AW=Math.round(w*k);S.AH=Math.round(h*k);
   view.width=work.width=S.AW;view.height=work.height=S.AH;S.geoms={};
   const st=S.cam.getVideoTracks()[0].getSettings();$('#camBadge').textContent=`${w}×${h}・${Math.round(st.frameRate||30)}fps`;
-  $('#camBtn').textContent='カメラ起動中';$('#camBtn').disabled=true;$('#calL').disabled=$('#calR').disabled=false;$('#ballBtn').disabled=false;$('#autoBtn').disabled=false;
+  $('#camBtn').hidden=true;$('#camBtn').disabled=true;$('#calL').disabled=$('#calR').disabled=false;$('#ballBtn').disabled=false;$('#autoBtn').disabled=false;
   try{S.wake=await navigator.wakeLock.request('screen');}catch(_){}
   updateCal();requestAnimationFrame(preview);
   if(S.cals.L||S.cals.R)msg('前回の位置合わせを使っています。ずれていれば「自動で位置合わせ」を押すか、角の丸をドラッグして直してください。');
@@ -1242,6 +1485,39 @@ function updateCal(){
     h.textContent=`${LN[S.calLane]}レーン：`+['① ファウルラインの左端','② ファウルラインの右端',`③ 奥（${D} ft）の右端`,`④ 奥（${D} ft）の左端`][S.calTmp.length]+'をタップ（押したまま動かすと拡大）';}
   else h.hidden=true;
   $('#runBtn').disabled=!S.cam||S.calMode||!(ensureGeom('L')||ensureGeom('R'));
+  $('#goPlay').disabled=!S.cam||S.calMode||S.autoBusy||!(ensureGeom('L')||ensureGeom('R'));
+  try{fineInit();}catch(_){}
+}
+/* ---------- fine adjustment: pick a corner, nudge it with the arrow pad ---------- */
+const CN=['手前左','手前右','奥右','奥左'];
+S.sel=null;S.fineStep=1;
+function fineInit(){if(!S.cals.L&&!S.cals.R){S.sel=null;}else if(!S.sel||!S.cals[S.sel.lane])S.sel={lane:S.cals.L?'L':'R',idx:3};fineUI();}
+function fineUI(){
+  const box=$('#fine');if(!box)return;const on=!!S.sel&&!S.calMode&&!S.running;box.hidden=!on;if(!on)return;
+  box.querySelectorAll('[data-fl]').forEach(b=>{b.setAttribute('aria-checked',String(b.dataset.fl===S.sel.lane));b.disabled=!S.cals[b.dataset.fl];});
+  box.querySelectorAll('[data-fc]').forEach(b=>b.setAttribute('aria-checked',String(+b.dataset.fc===S.sel.idx)));
+  $('#fineLabel').textContent=`${LN[S.sel.lane]}レーン・${CN[S.sel.idx]}の角`;$('#fineStep').textContent=S.fineStep===1?'細':'粗';
+}
+function nudge(dx,dy){const sel=S.sel;if(!sel||!S.cals[sel.lane])return;const c=S.cals[sel.lane],old=c.pts[sel.idx].slice(),k=S.fineStep===1?.5:3;
+  c.pts[sel.idx]=[Math.max(0,Math.min(1,old[0]+dx*k/S.AW)),Math.max(0,Math.min(1,old[1]+dy*k/S.AH))];delete S.geoms[sel.lane];
+  if(!ensureGeom(sel.lane)){c.pts[sel.idx]=old;delete S.geoms[sel.lane];return;}
+  clearTimeout(nudge.t);nudge.t=setTimeout(()=>{store.set('bl-live-cal',S.cals);updateCal();},250);}
+$('#fine').querySelectorAll('[data-fl]').forEach(b=>b.onclick=()=>{if(!S.cals[b.dataset.fl])return;S.sel={lane:b.dataset.fl,idx:S.sel?S.sel.idx:3};fineUI();});
+$('#fine').querySelectorAll('[data-fc]').forEach(b=>b.onclick=()=>{S.sel={lane:S.sel?S.sel.lane:'L',idx:+b.dataset.fc};fineUI();});
+$('#fineStep').onclick=()=>{S.fineStep=S.fineStep===1?2:1;fineUI();};
+$('#fine').querySelectorAll('.pad[data-dx]').forEach(b=>{let t1=null,t2=null;const stop=()=>{clearTimeout(t1);clearInterval(t2);t1=t2=null;};
+  b.addEventListener('pointerdown',e=>{e.preventDefault();const dx=+b.dataset.dx,dy=+b.dataset.dy;nudge(dx,dy);stop();t1=setTimeout(()=>{t2=setInterval(()=>nudge(dx,dy),60);},380);});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,stop));b.addEventListener('contextmenu',e=>e.preventDefault());});
+document.addEventListener('keydown',e=>{if(!S.sel||$('#dash').classList.contains('setup')===false||/INPUT|SELECT|TEXTAREA/.test((e.target.tagName||'')))return;
+  const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];if(m){e.preventDefault();nudge(m[0],m[1]);}});
+// two screens: lining up the lanes first, then the play screen (camera | lane | numbers, scores below)
+function setMode(play){
+  const d=$('#dash');if(!d)return;if(!play&&S.running)return;
+  if(play&&S.calMode)return;
+  d.classList.toggle('setup',!play);$('#calAsk').hidden=true;window.scrollTo({top:0});
+  if(play){renderDash(GM.built);setTimeout(()=>{try{renderLast();}catch(_){}},60);
+    msg(S.running?'計測中です。カメラを動かさないでください。':'「ゲーム開始」を押すと計測を始めます。下にスクロールすると投球順や設定を変えられます。');}
+  else msg('レーンの枠を確認して「この位置で始める」を押してください。');
 }
 /* ---------- automatic lane finding ---------- */
 async function autoCal(){
@@ -1251,7 +1527,7 @@ async function autoCal(){
   for(let i=0;i<12;i++){msg(`レーンを探しています…（${i+1}/12）　カメラを動かさないでください`);cx.drawImage(video,0,0,W,H);frames.push(cx.getImageData(0,0,W,H).data);await new Promise(r=>setTimeout(r,300));}
   await new Promise(r=>setTimeout(r,20));
   let r=BL.findLanes(frames,W,H),single=false;if(!r.ok){r=BL.findLanes(frames,W,H,{single:true});single=true;}
-  S.autoBusy=false;$('#autoBtn').disabled=false;
+  S.autoBusy=false;$('#autoBtn').disabled=false;updateCal();
   if(!r.ok){msg('レーンの位置を自動で見つけられませんでした。ペアのレーンとピンが画面に入るようにカメラを向けて、もう一度「自動で位置合わせ」を押すか、4点で指定してください。',true);return;}
   $('#calDist').value='60';const D=60;
   if(single){const l=defHand()==='L'?'R':'L';S.cals[l]={pts:r.L,D};}else S.cals={L:{pts:r.L,D},R:{pts:r.R,D}};
@@ -1259,11 +1535,14 @@ async function autoCal(){
   if(!S.cals.L&&!S.cals.R){msg('レーンの位置を自動で見つけられませんでした。4点で指定してください。',true);return;}
   store.set('bl-live-cal',S.cals);updateCal();
   const unsure=r.conf!=='high'||single;$('#calAsk').hidden=!unsure;
-  if(unsure){$('#calAskText').textContent=(single?'レーンが1本しか見つかりませんでした。':'')+'自動で合わせたレーンの位置に自信がありません。黄色の枠がレーンの端（ファウルラインとピンの手前）に合っていますか？ずれている角は丸をドラッグして直せます。';msg('レーンの位置を確認してください。');}
-  else msg('レーンの位置を自動で合わせました。枠がずれていたら角の丸をドラッグして直せます。「ゲーム開始」で計測を始めます。');
+    if(unsure){$('#calAskText').textContent=(single?'レーンが1本しか見つかりませんでした。':'')+'自動で合わせたレーンの位置に自信がありません。黄色の枠がレーンの端（ファウルラインとピンの手前）に合っていますか？ずれている角は「微調整」で選んで矢印で直せます。';msg('レーンの位置を確認してください。');}
+  else msg('レーンの位置を自動で合わせました。ずれている角は「微調整」で選んで矢印で直し、「この位置で始める」を押してください。');
 }
 $('#autoBtn').onclick=()=>autoCal();
-$('#calOk').onclick=()=>{$('#calAsk').hidden=true;msg('レーンの位置を確定しました。「ゲーム開始」で計測を始めます。');};
+window.addEventListener('resize',()=>{clearTimeout(window.__rs);window.__rs=setTimeout(()=>{try{renderLast();}catch(_){}},150);});
+$('#calOk').onclick=()=>{$('#calAsk').hidden=true;setMode(true);};
+$('#goPlay').onclick=()=>setMode(true);
+$('#backSetup').onclick=()=>{if(S.running){msg('ゲーム中は合わせ直せません。「ゲーム終了」を押してからにしてください。',true);return;}setMode(false);};
 $('#calRedo').onclick=()=>{$('#calAsk').hidden=true;startCal('L');};
 // drag a corner of a lane that is already set
 const nearCorner=p=>{const r=view.getBoundingClientRect();let best=null,bd=24;
@@ -1271,7 +1550,7 @@ const nearCorner=p=>{const r=view.getBoundingClientRect();let best=null,bd=24;
 const cornerOk=()=>!S.calMode&&!S.ballMode&&!S.running&&!S.autoBusy&&S.cam;
 view.addEventListener('touchstart',e=>{if(!cornerOk()||e.touches.length!==1)return;if(nearCorner(calPos(e.touches[0])))e.preventDefault();},{passive:false});
 view.addEventListener('pointerdown',e=>{if(!cornerOk())return;const p=calPos(e),hit=nearCorner(p);if(!hit)return;e.preventDefault();try{view.setPointerCapture(e.pointerId);}catch(_){}
-  S.cdrag=Object.assign(hit,{orig:S.cals[hit.lane].pts[hit.idx].slice()});S.drag=p;});
+  S.cdrag=Object.assign(hit,{orig:S.cals[hit.lane].pts[hit.idx].slice()});S.drag=p;S.sel={lane:hit.lane,idx:hit.idx};fineUI();});
 view.addEventListener('pointermove',e=>{if(!S.cdrag)return;e.preventDefault();const p=calPos(e);S.drag=p;S.cals[S.cdrag.lane].pts[S.cdrag.idx]=p;delete S.geoms[S.cdrag.lane];});
 view.addEventListener('pointerup',()=>{if(!S.cdrag)return;const l=S.cdrag.lane;
   if(!ensureGeom(l)){S.cals[l].pts[S.cdrag.idx]=S.cdrag.orig;delete S.geoms[l];msg('その位置では枠が正しく作れません。元に戻しました。',true);}
@@ -1317,11 +1596,19 @@ function preview(){
     c.restore();}
   if(!S.calMode&&!S.ballMode&&!S.running){c.save();for(const l of['L','R']){const cc=S.cals[l];if(!cc||!ensureGeom(l))continue;
       for(const[x,y]of cc.pts){c.fillStyle='rgba(0,0,0,.45)';c.beginPath();c.arc(x*AW,y*AH,7,0,7);c.fill();c.strokeStyle='#FFD34D';c.lineWidth=1.6;c.stroke();}}c.restore();}
-  if(S.cdrag&&S.drag&&video.readyState>=2){const px=S.drag[0]*AW,py=S.drag[1]*AH,R=Math.round(Math.min(AW,AH)*.2),Z=4,lx=px<AW/2?AW-R-12:R+12,ly=R+12,sx=video.videoWidth/AW,sy=video.videoHeight/AH;
+  const setupOn=$('#dash').classList.contains('setup');
+  const selPt=!S.cdrag&&setupOn&&S.sel&&!S.calMode&&S.cals[S.sel.lane]?S.cals[S.sel.lane].pts[S.sel.idx]:null;
+  if(selPt){c.save();c.strokeStyle='#FF4D5A';c.lineWidth=2.5;c.beginPath();c.arc(selPt[0]*AW,selPt[1]*AH,10,0,7);c.stroke();c.restore();}
+  const magPt=S.cdrag&&S.drag?S.drag:selPt;
+  if(magPt&&video.readyState>=2){const px=magPt[0]*AW,py=magPt[1]*AH,R=Math.round(Math.min(AW,AH)*.2),Z=4,lx=px<AW/2?AW-R-12:R+12,ly=R+12,sx=video.videoWidth/AW,sy=video.videoHeight/AH;
     c.save();c.beginPath();c.arc(lx,ly,R,0,7);c.clip();c.fillStyle='#000';c.fillRect(lx-R,ly-R,2*R,2*R);
-    c.drawImage(video,(px-R/Z)*sx,(py-R/Z)*sy,(2*R/Z)*sx,(2*R/Z)*sy,lx-R,ly-R,2*R,2*R);c.restore();
+    c.drawImage(video,(px-R/Z)*sx,(py-R/Z)*sy,(2*R/Z)*sx,(2*R/Z)*sy,lx-R,ly-R,2*R,2*R);
+    // the lane frame, magnified too, so the edge can be laid exactly on the gutter line
+    const M=q=>[lx+(q[0]*AW-px)*Z,ly+(q[1]*AH-py)*Z];c.strokeStyle='rgba(255,211,77,.95)';c.lineWidth=1.5;
+    for(const l of['L','R']){const cc=S.cals[l];if(!cc)continue;const P=cc.pts.map(M);c.beginPath();P.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.closePath();c.stroke();}
+    c.restore();
     c.save();c.strokeStyle='#FFD34D';c.lineWidth=2;c.beginPath();c.arc(lx,ly,R,0,7);c.stroke();
-    c.lineWidth=1.2;c.beginPath();c.moveTo(lx-R,ly);c.lineTo(lx-5,ly);c.moveTo(lx+5,ly);c.lineTo(lx+R,ly);c.moveTo(lx,ly-R);c.lineTo(lx,ly-5);c.moveTo(lx,ly+5);c.lineTo(lx,ly+R);c.stroke();c.restore();}
+    c.strokeStyle='#FF4D5A';c.lineWidth=1.4;c.beginPath();c.arc(lx,ly,5,0,7);c.stroke();c.restore();}
   if(S.ballPend){c.save();c.strokeStyle='#FFD34D';c.lineWidth=2.5;c.beginPath();c.arc(S.ballPend.x,S.ballPend.y,S.ballPend.r,0,7);c.stroke();c.restore();}
   requestAnimationFrame(preview);
 }
@@ -1331,11 +1618,11 @@ function startGame(){if(S.ballMode)endBall();
   const lanes=['L','R'].filter(l=>ensureGeom(l));if(!lanes.length)return;
   S.streams={};const thr=+$('#sens').value;prepareROI();
   for(const l of lanes)S.streams[l]=BL.createStream(ensureGeomA(l),{lane:l,thr,crops:true,el:video,srcW:video.videoWidth,srcH:video.videoHeight,balls});
-  GM.evs=[];GM.opts={format:$('#fmt').value,person:{},pins:{},names:{},fill:{},skipQ:{}};GM.built=null;S.lastId=null;
+  GM.evs=[];GM.opts={format:$('#fmt').value,person:{},pins:{},names:{},fill:{},skipQ:{}};GM.built=null;S.lastId=null;GM.saved=null;saveState('');
   S.running=true;S.t0=performance.now()/1000;S.frames=0;S.fpsWin=[];
   if($('#recOn').checked&&window.MediaRecorder){try{const mt=['video/mp4','video/webm;codecs=vp9','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));
-    S.chunks=[];S.rec=new MediaRecorder(S.cam,mt?{mimeType:mt}:undefined);S.rec.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};S.rec.start(1000);}catch(_){S.rec=null;}}
-  $('#runBtn').textContent='ゲーム終了';$('#liveTag').classList.add('on');$('#calL').disabled=$('#calR').disabled=$('#autoBtn').disabled=true;$('#calAsk').hidden=true;$('#exportBtn').disabled=true;$('#recBtn').hidden=true;
+    S.chunks=[];S.rec=new MediaRecorder(S.cam,Object.assign({videoBitsPerSecond:2500000},mt?{mimeType:mt}:{}));S.rec.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};S.rec.start(1000);}catch(_){S.rec=null;}}
+  $('#runBtn').textContent='ゲーム終了';$('#liveTag').classList.add('on');$('#calL').disabled=$('#calR').disabled=$('#autoBtn').disabled=true;$('#calAsk').hidden=true;$('#exportBtn').disabled=true;$('#saveLocal').disabled=true;$('#recBtn').hidden=true;
   const z=roi?(roi.AW/roi.w)/(S.AW/video.videoWidth):1;msg('計測中です。カメラを動かさないでください。'+(z>1.15?`（レーン周辺を${z.toFixed(1)}倍に拡大して解析中）`:''));renderGame();
   if('requestVideoFrameCallback' in HTMLVideoElement.prototype)video.requestVideoFrameCallback(onFrame);else requestAnimationFrame(()=>onFrame(performance.now()));
   S.rebuildTimer=setInterval(()=>{if(GM.evs.length)rebuild();},2000);
@@ -1359,14 +1646,14 @@ function onFrame(now){
 function onThrow(ev,lane){
   ev.id='t'+(GM.evs.length+1);ev.lane=lane;
   const m=S.streams[lane].measure(ev,defHand());ev.raw=m?m.raw:null;if(m)ev.col=BL.chainColor(m.raw.chain)||ev.col;
-  GM.evs.push(ev);S.lastId=ev.id;rebuild();toast(`${LN[lane]}レーンで投球を検出`);
+  GM.evs.push(ev);S.lastId=ev.id;rebuild();toast(`${LN[lane]}レーンで投球を検出`);autoSaveSoon(4000);
 }
 function stopGame(){
   S.running=false;clearInterval(S.rebuildTimer);
   if(S.rec&&S.rec.state!=='inactive'){S.rec.onstop=()=>{S.recBlob=new Blob(S.chunks,{type:S.rec.mimeType||'video/webm'});const b=$('#recBtn');b.hidden=false;
       b.textContent=`録画を保存（${(S.recBlob.size/1048576).toFixed(0)} MB）`;};S.rec.stop();}
   $('#runBtn').textContent='ゲーム開始';$('#liveTag').classList.remove('on');$('#calL').disabled=$('#calR').disabled=$('#autoBtn').disabled=false;
-  rebuild();rememberPeople();$('#exportBtn').disabled=!GM.evs.length;msg(GM.evs.length?'ゲームを終了しました。ピンや投げた人を直してから「記録を書き出す」で保存できます。':'ゲームを終了しました。');
+  rebuild();rememberPeople();$('#exportBtn').disabled=$('#saveLocal').disabled=!GM.evs.length;if(GM.evs.length)autoSave(true);else msg('ゲームを終了しました（投球がなかったので保存はしていません）。');
 }
 $('#runBtn').onclick=()=>{if(S.running)stopGame();else startGame();};
 $('#camBtn').onclick=startCamera;
@@ -1389,6 +1676,7 @@ function rebuild(){
   for(const th of B.throws){const p=B.persons.find(x=>x.key===th.person),hand=p?p.handUse:defHand();th.ev=GM.evs.find(e=>e.id===th.id)||{};th.eligible=th.lane===BL.measureLane(hand);
     th.res=th.eligible&&th.ev.raw?BL.computeResults(th.ev.raw,hand):null;th.sum=th.res?BL.summarize(th.res):null;th.handUse=hand;if(th.standingBefore==null)th.standingBefore=10;}
   GM.built=B;renderGame();renderLast();
+  if(!S.running&&GM.saved)autoSaveSoon(1500);  // a fix after the game replaces the saved copy
 }
 function sheetHTML(p){
   const fr=p.score.frames,thBy={};p.throws.forEach(t=>thBy[t.rollIndex]=t);
@@ -1421,7 +1709,20 @@ function renderQuestions(){
   if(QIMG)drawQImgs(qs);
 }
 
-function renderGame(){try{renderQuestions();}catch(_){}
+// the compact score board on the first screen: one row per bowler, marks over running totals
+function renderDash(B){
+  const el=$('#dashScore');if(!el)return;
+  const qs=B?(B.questions||[]).filter(q=>!(GM.opts.skipQ&&GM.opts.skipQ[q.qid])):[],qa=$('#qAlert');
+  if(qa){const ca=!$('#calAsk').hidden;qa.hidden=!qs.length&&!ca;qa.href=qs.length?'#qBox':'#calAsk';qa.textContent=qs.length?`確認が${qs.length}件あります ▼`:ca?'レーン位置の確認 ▼':'';}
+  if(!B||!B.persons.length){el.innerHTML='<p class="hint">投球を検出すると、ここに全員のスコアが出ます。</p>';return;}
+  const last=B.throws.find(t=>t.id===S.lastId);
+  el.innerHTML=`<table class="dscore"><thead><tr><th class="dn">名前</th>${Array.from({length:10},(_,i)=>`<th>${i+1}</th>`).join('')}<th class="dt">計</th></tr></thead><tbody>${
+    B.persons.map(p=>{const fr=p.score.frames,tot=p.score.total!=null?p.score.total:p.score.partial,cur=last&&last.person===p.key;
+      return `<tr${cur?' class="cur"':''}><th class="dn">${esc(p.label)}</th>${Array.from({length:10},(_,i)=>{const f=fr[i];
+        if(!f)return '<td></td>';const low=f.idx.some(x=>{const t=p.throws.find(t=>t.rollIndex===x);return t&&t.conf!=='mid'&&t.conf!=='set';});
+        return `<td${low?' class="low"':''}><span class="mk">${esc(f.marks.join(''))}</span><span class="rt">${f.total??''}</span></td>`;}).join('')}<td class="dt">${tot??''}</td></tr>`;}).join('')}</tbody></table>`;
+}
+function renderGame(){try{renderQuestions();}catch(_){}try{renderDash(GM.built);}catch(_){}
   const B=GM.built;$('#gameBadge').textContent=B?`${B.throws.length}投・${B.persons.length}人`:'0投';
   if(!B){$('#personList').innerHTML='<p class="hint">投球を検出すると、投げた人ごとのスコア表がここに出ます。投球順と体のフォルムから、投げた人を割り当てます。</p>';
     $('#gThrows').innerHTML='<tr><td colspan="10" style="color:var(--muted)">まだ投球がありません</td></tr>';return;}
@@ -1459,17 +1760,51 @@ function renderGame(){try{renderQuestions();}catch(_){}
 function renderLast(){
   const B=GM.built;const th=B&&B.throws.find(t=>t.id===S.lastId);
   const set=(id,v)=>{$(id).innerHTML=v;};
-  if(!th){drawLane(null);return;}
+  if(!th){drawLane(null);drawDashLane(null,null,defHand());return;}
   const p=B.persons.find(x=>x.key===th.person);
-  $('#lastBadge').textContent=`${fmtT(th.tRelease)}・${LN[th.lane]}レーン・${p?p.label:''}・${th.knocked??'?'}本`;
+  const lb=`${fmtT(th.tRelease)}・${LN[th.lane]}レーン・${p?p.label:''}・${th.knocked??'?'}本`;$('#lastBadge').textContent='直前：'+lb;if($('#lastBadge2'))$('#lastBadge2').textContent=lb;
   const s=th.sum,r=th.res;
   if(!s){['#lRpm','#lSpd','#lSpat','#lBp'].forEach(i=>set(i,'—'));set('#lRpmSub',th.eligible?'ボールを追跡できず':`対象外（${th.handUse==='R'?'右':'左'}投げは${LN[BL.measureLane(th.handUse)]}レーンで計測）`);
-    ['#lSpdSub','#lSpatSub','#lBpSub'].forEach(i=>set(i,''));drawLane(null);return;}
+    ['#lSpdSub','#lSpatSub','#lBpSub'].forEach(i=>set(i,''));drawLane(null);drawDashLane(null,null,th.handUse);return;}
   set('#lRpm',s.rpm??'—');set('#lRpmSub',s.rpm?`<span class="chip ${s.rpmConf==='高'?'ok':s.rpmConf==='中'?'ng':'bad'}">信頼度 ${s.rpmConf}</span>0〜15 ft`:'0〜15 ftで周期を検出できず');
   set('#lSpd',s.speedKmh??'—');set('#lSpdSub',s.speedKmh?`${(s.speedKmh/KMH*MPH).toFixed(1)} mph`:'');
   set('#lSpat',s.spatBoard??'—');set('#lSpatSub','15 ft 地点');
   set('#lBp',s.bpBoard??'—');set('#lBpSub',s.bpFt!=null?`${s.bpFt} ft 地点`:'曲がり始めを検出できず');
-  drawLane(r,th.handUse);
+  drawLane(r,th.handUse);drawDashLane(r,s,th.handUse);
+}
+// slim top-down lane next to the camera (pins at the top, foul line at the bottom)
+function drawDashLane(r,s,hand){
+  const cv=$('#dlane'),box=$('#dlaneBox');if(!cv||!box)return;
+  const W=Math.max(40,box.clientWidth),H=Math.max(120,box.clientHeight),dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.width=W+'px';cv.style.height=H+'px';
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);
+  const css=getComputedStyle(document.documentElement),col=n=>css.getPropertyValue(n).trim()||'#888';
+  const gw=Math.max(3,W*.06),lx=gw+2,lw=W-2*gw-4,top=6,bot=H-6,vMin=-1.5,vMax=63.5;
+  const X=u=>lx+u/39*lw,Y=v=>bot-(v-vMin)/(vMax-vMin)*(bot-top);
+  c.fillStyle='#2b2f36';c.fillRect(0,0,W,H);
+  c.fillStyle='#5a5f68';c.fillRect(lx-gw,Y(60),gw,Y(vMin)-Y(60));c.fillRect(lx+lw,Y(60),gw,Y(vMin)-Y(60));
+  const g=c.createLinearGradient(0,Y(60),0,Y(0));g.addColorStop(0,'#d9c39a');g.addColorStop(1,'#efe1c4');c.fillStyle=g;c.fillRect(lx,Y(vMax),lw,Y(vMin)-Y(vMax));
+  c.fillStyle='rgba(214,40,57,.10)';c.fillRect(lx,Y(15),lw,Y(0)-Y(15));
+  c.strokeStyle='rgba(120,90,50,.18)';c.lineWidth=.5;c.beginPath();for(let k=5;k<39;k+=5){const x=Math.round(X(k))+.5;c.moveTo(x,Y(vMin));c.lineTo(x,Y(60));}c.stroke();
+  c.strokeStyle='#1d2127';c.lineWidth=1.4;c.beginPath();c.moveTo(lx,Y(0));c.lineTo(lx+lw,Y(0));c.stroke();
+  const bu=b=>(hand||'R')==='R'?39.5-b:b-.5;c.fillStyle='#3a3f47';
+  for(const b of[5,10,15,20,25,30,35]){const tip=16-Math.abs(b-20)/5,x=X(bu(b)),hw=Math.max(1.5,lw/39*.9);c.beginPath();c.moveTo(x,Y(tip));c.lineTo(x-hw,Y(tip-2.6));c.lineTo(x+hw,Y(tip-2.6));c.closePath();c.fill();}
+  for(const b of[3,5,8,11,14,26,29,32,35,37]){c.beginPath();c.arc(X(bu(b)),Y(7),Math.max(.8,lw/39*.45),0,7);c.fill();}
+  const pr=Math.max(1.6,lw/39*1.9);
+  for(let row=0;row<4;row++)for(let k=0;k<=row;k++){const u=19.5+(k-row/2)*11.28,v=60.6+row*.866;c.fillStyle='#fff';c.strokeStyle='#1d2127';c.lineWidth=.8;c.beginPath();c.arc(X(u),Y(v),pr,0,7);c.fill();c.stroke();}
+  if(!r){c.fillStyle='rgba(255,255,255,.75)';c.font='bold 10px system-ui';c.textAlign='center';c.save();c.translate(W/2,Y(35));c.rotate(-Math.PI/2);c.fillStyle='#6b6255';c.fillText('投球後に軌跡',0,3);c.restore();return;}
+  const red=col('--accent');c.lineJoin='round';c.lineCap='round';
+  const line=(pts,dash,w)=>{c.setLineDash(dash);c.beginPath();pts.forEach(([u,v],i)=>{const x=X(u),y=Y(v);i?c.lineTo(x,y):c.moveTo(x,y);});c.strokeStyle=red;c.lineWidth=w;c.stroke();c.setLineDash([]);};
+  const a=Math.max(0,r.first-EXT),b=Math.min(60,r.last+EXT);
+  if(r.first>a)line([[r.uAt(a).u,a],[r.P[0].us,r.first]],[3,3],1.6);
+  if(r.last<b)line([[r.P[r.P.length-1].us,r.last],[r.uAt(b).u,b]],[3,3],1.6);
+  line(r.P.map(p=>[p.us,p.v]),[],2.4);
+  // number tags: spat board at 15 ft, break point where the ball turns
+  const tag=(u,v,txt)=>{const x=X(u),y=Y(v);c.font='bold 10px system-ui';const tw=c.measureText(txt).width+8,bx=Math.min(W-tw-1,Math.max(1,x-tw/2));
+    c.fillStyle='#1d2127';c.beginPath();c.roundRect?c.roundRect(bx,y-7,tw,14,7):c.rect(bx,y-7,tw,14);c.fill();c.fillStyle='#fff';c.textAlign='left';c.textBaseline='middle';c.fillText(txt,bx+4,y+.5);
+    c.fillStyle=red;c.beginPath();c.arc(x,y,2.6,0,7);c.fill();};
+  if(s&&s.spatBoard!=null){const u=r.uAt(15).u;tag(u,15,String(s.spatBoard));}
+  if(s&&s.bpBoard!=null&&s.bpFt!=null){const u=r.uAt(s.bpFt).u;tag(u,s.bpFt,String(s.bpBoard));}
 }
 function drawLane(r,hand){
   const L=laneBase($('#lane'),hand||defHand(),true),T=L.T;
@@ -1499,21 +1834,51 @@ function throwDoc(r,hand){
     boards:r.table.map(t=>({name:t.name,v:t.v,u:t.u==null?null:Math.round(t.u*100)/100,board:t.board,est:t.est,key:t.key})),
     path:r.P.filter((_,i)=>i%step===0||i===r.P.length-1).map(p=>({u:Math.round(p.us*100)/100,v:Math.round(p.v*100)/100})),note:''};
 }
-function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
-$('#exportBtn').onclick=()=>{
-  const B=GM.built;if(!B)return;rememberPeople();
+function download(blob,name){return BL.saveFile(blob,name);}
+// the finished game in the form the records page reads (also what gets written to the file)
+function buildRecord(auto){
+  const B=GM.built;if(!B)return null;rememberPeople();
   const unnamed=B.persons.filter(p=>p.key!=='?'&&!(resolveName(p)||{}).name);
-  if(unnamed.length){msg(`${unnamed.map(p=>p.label).join('、')}の名前を選んでから書き出してください。`,true);return;}
+  if(unnamed.length&&!auto){msg(`${unnamed.map(p=>p.label).join('、')}の名前を選んでから保存してください（下にスクロールした「投げた人とスコアの修正」で選べます）。`,true);return null;}
   const now=new Date(),stamp=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
   const out={app:'BowlingLabo Live',version:1,createdAt:now.getTime(),format:GM.opts.format,source:`ライブ撮影 ${now.toLocaleDateString('ja-JP')}`,
-    persons:B.persons.filter(p=>p.key!=='?').map(p=>{const nm=resolveName(p),me=people.find(x=>x.name===nm.name);return{name:nm.name,hand:p.handUse,sig:p.sig,
+    persons:B.persons.filter(p=>p.key!=='?').map(p=>{const nm=resolveName(p)||{name:p.label},me=people.find(x=>x.name===(nm.name||p.label));return{name:nm.name||p.label,hand:p.handUse,sig:p.sig,
       balls:me?balls.filter(b=>b.bowlerId===me.id).map(b=>({id:b.id,name:b.name,hist:b.hist,n:b.n||1,thumb:b.thumb})):[],rolls:p.rolls,marks:p.score.frames.map(f=>f.marks.join('')),
       total:p.score.total,partial:p.score.partial,lanes:p.score.frames.map(f=>{const t=p.throws.find(x=>x.rollIndex===f.idx[0]);return t?t.lane:null;}),
       throws:p.throws.map(t=>({frame:t.frame+1,pins:t.knocked,lane:t.lane,ballId:t.ev.ballId||null,ballName:t.ev.ballId?(balls.find(b=>b.id===t.ev.ballId)||{}).name||null:null,doc:t.res?Object.assign(throwDoc(t.res,p.handUse),{note:`${t.frame+1}フレーム・${LN[t.lane]}レーン`}):null}))};})};
-  download(new Blob([JSON.stringify(out)],{type:'application/json'}),`bowlinglabo-${stamp}.json`);msg('記録を書き出しました。');
-};
+  return{out,stamp};
+}
+$('#exportBtn').onclick=()=>{const r=buildRecord();if(!r)return;download(new Blob([JSON.stringify(r.out)],{type:'application/json'}),`bowlinglabo-${r.stamp}.json`);msg('記録をファイルに書き出しました。');};
+// straight into the records kept on this device (the same place the records page reads)
+/* ---------- every game is kept on this device automatically ----------
+   While playing it is saved a few seconds after each throw (so nothing is lost if the page closes),
+   at "ゲーム終了" it is saved again, and later fixes (pins, names) replace the saved copy. */
+GM.saved=null;let saveChain=Promise.resolve(),saveTimer=null;
+function saveState(t){for(const id of['#saveState','#saveState2']){const el=$(id);if(el)el.textContent=t;}}
+function autoSave(final){
+  clearTimeout(saveTimer);saveTimer=null;
+  saveChain=saveChain.then(async()=>{
+    if(!GM.evs.length||!GM.built)return;const r=buildRecord(true);if(!r)return;
+    try{const db=await BL.localDB();
+      // replace the copy saved earlier for this game
+      if(GM.saved&&GM.saved.made)for(const path of GM.saved.made){try{await db.doc(path).delete();}catch(_){}}
+      const all=db.dump(),list=c=>Object.entries(all).filter(([k])=>k.startsWith(c+'/')&&k.split('/').length===2).map(([k,v])=>({id:k.slice(c.length+1),...v}));
+      if(GM.saved&&GM.saved.createdAt)r.out.createdAt=GM.saved.createdAt;
+      const res=await BL.importLive(db,r.out,{bowlers:list('bowlers'),balls:list('balls')});
+      GM.saved={made:res.made,createdAt:r.out.createdAt,at:Date.now()};
+      const d=new Date(),hm=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const unnamed=GM.built.persons.filter(p=>p.key!=='?'&&!(resolveName(p)||{}).name).map(p=>p.label);
+      saveState(`${S.running?'途中経過を':'このゲームを'}自動保存しました（${hm}）`);
+      if(final)msg(`ゲームを終了し、この端末の記録に自動で保存しました（${res.n}人・${res.nt}投）。`+(unnamed.length?`名前が未入力の人は「${unnamed.join('」「')}」として保存しています。`:'')+'ピンや名前を直すと、保存した記録も自動で直ります。');
+    }catch(e){saveState('自動保存できませんでした');if(final)msg('記録を自動保存できませんでした。ブラウザのサイトデータの保存が許可されているか確認してください。',true);}
+  });return saveChain;}
+function autoSaveSoon(ms){clearTimeout(saveTimer);saveTimer=setTimeout(()=>autoSave(false),ms);}
+$('#saveLocal2').onclick=()=>$('#saveLocal').click();
+const syncSave2=()=>{};
+new MutationObserver(syncSave2).observe($('#saveLocal'),{attributes:true,attributeFilter:['disabled']});
+$('#saveLocal').onclick=async()=>{const r=buildRecord(false);if(!r)return;await autoSave(false);msg('この端末の記録に保存しました。「記録・集計を見る」で確認できます。');toast('記録に保存しました');};
 $('#recBtn').onclick=()=>{if(!S.recBlob)return;const ext=(S.recBlob.type||'').includes('mp4')?'mp4':'webm';download(S.recBlob,`bowlinglabo-${Date.now()}.${ext}`);};
-$('#resetBtn').onclick=()=>{if(S.running)return;GM.evs=[];GM.built=null;S.lastId=null;S.streams={};renderGame();renderLast();$('#lastBadge').textContent='まだありません';$('#exportBtn').disabled=true;msg('新しいゲームの準備ができました。');};
+$('#resetBtn').onclick=()=>{if(S.running)return;GM.evs=[];GM.built=null;GM.saved=null;saveState('');S.lastId=null;S.streams={};renderGame();renderLast();$('#lastBadge').textContent='直前の投球：まだありません';if($('#lastBadge2'))$('#lastBadge2').textContent='まだありません';$('#exportBtn').disabled=true;$('#saveLocal').disabled=true;msg('新しいゲームの準備ができました。');};
 
 /* ---------- registered balls (kept on this device) ---------- */
 function ballMsg(t,err){msg(t,err);}

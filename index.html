@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121D25">
+<title>BowlingLabo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BowlingLabo">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#F4F5F6;--surface:#FFFFFF;--sunken:#ECEEF0;--ink:#121D25;--muted:#5C6670;--line:#D9DDE1;--accent:#C41E2E;--accent-ink:#FFFFFF;--warn:#A0650F;
+  --f-display:'Archivo',system-ui,sans-serif;--f-body:'Zen Kaku Gothic New',system-ui,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1418;--surface:#161E24;--sunken:#1D272E;--ink:#E8EDF0;--muted:#97A3AC;--line:#2A363E;--accent:#FF5A66;--accent-ink:#22040A;--warn:#E3A33B;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1418;--surface:#161E24;--sunken:#1D272E;--ink:#E8EDF0;--muted:#97A3AC;--line:#2A363E;--accent:#FF5A66;--accent-ink:#22040A;--warn:#E3A33B;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:16px;height:29px}
+h1{font-family:var(--f-display);font-stretch:85%;font-weight:800;font-size:30px;margin:0;letter-spacing:-.01em}
+.lede{margin:0;color:var(--muted);font-size:14px}
+.card{display:flex;gap:14px;align-items:center;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;min-height:96px}
+.card:active{transform:scale(.99)}
+.card .ic{flex:0 0 52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--sunken)}
+.card.main .ic{background:var(--accent)}
+.card .ic svg{width:28px;height:28px}
+.card b{display:block;font-size:18px}
+.card small{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+.card .go{margin-left:auto;color:var(--muted);font-size:20px}
+.stat{background:var(--sunken);border-radius:12px;padding:12px 14px;font-size:13.5px;color:var(--muted)}
+.stat b{color:var(--ink)}
+.howto{border:1.5px solid var(--warn);border-radius:12px;padding:12px 14px;font-size:13.5px;background:color-mix(in srgb,var(--warn) 7%,transparent)}
+.howto h2{font-size:15px;margin:0 0 4px}
+.howto ol{margin:4px 0 0;padding-left:1.3em}
+.foot{font-size:12px;color:var(--muted);margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <svg viewBox="0 0 20 36" aria-hidden="true"><path fill="currentColor" d="M10 1.5c3 0 4.2 3 3.4 6-.5 2-1.7 3.1-1.5 5.2.3 3 4.4 6.2 4.4 12.4 0 6.2-3.1 9.4-6.3 9.4s-6.3-3.2-6.3-9.4c0-6.2 4.1-9.4 4.4-12.4.2-2.1-1-3.2-1.5-5.2C5.8 4.5 7 1.5 10 1.5z"/><rect x="7.4" y="10.6" width="5.2" height="1.4" fill="#C41E2E"/><rect x="7.2" y="13" width="5.6" height="1.4" fill="#C41E2E"/></svg>
+    <h1>BowlingLabo</h1>
+  </div>
+  <p class="lede">ボールの回転数・初速・軌跡・板目を計測し、スコアと一緒に記録します。</p>
+
+  <a class="card main" href="bowlinglabo-live.html">
+    <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+    <span><b>ライブ撮影</b><small>スマホを横向きに固定して、撮りながら計測とスコア付け</small></span><span class="go">›</span>
+  </a>
+  <a class="card" href="bowlinglabo.html">
+    <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+    <span><b>記録・集計</b><small>人物ごとの記録、アベレージや推移、バックアップ。撮った動画の解析もここ</small></span><span class="go">›</span>
+  </a>
+
+  <div class="stat" id="stat">この端末の記録を確認しています…</div>
+
+  <div class="howto" id="howto" hidden>
+    <h2>ホーム画面に追加して使ってください</h2>
+    <div id="howIOS" hidden>iPhone（Safari）：
+      <ol><li>画面下の共有ボタン（□に↑）を押す</li><li>「ホーム画面に追加」を選ぶ</li><li>ホーム画面の BowlingLabo から開く</li></ol>
+      <p class="foot">iPhone では、ホーム画面から開いた場合と Safari で開いた場合で記録が別々に保存されます。いつもホーム画面から開いてください。</p></div>
+    <div id="howAnd" hidden>Android（Chrome）：
+      <ol><li>右上の ⋮ を押す</li><li>「ホーム画面に追加」または「アプリをインストール」を選ぶ</li><li>ホーム画面の BowlingLabo から開く</li></ol></div>
+    <p class="foot">アプリのように全画面で使え、記録も消えにくくなります。</p>
+  </div>
+
+  <p class="foot">記録はこの端末のブラウザの中にだけ保存されます。機種変更や別の端末へ移すときは、「記録・集計」のバックアップを使ってください。</p>
+</div>
+<script>
+(()=>{
+  const ua=navigator.userAgent,ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),android=/Android/.test(ua);
+  const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  if(!standalone&&(ios||android)){document.getElementById('howto').hidden=false;document.getElementById(ios?'howIOS':'howAnd').hidden=false;}
+  const st=document.getElementById('stat');
+  const show=(c)=>{let last=null;try{last=+localStorage.getItem('bl-last-backup')||null;}catch(_){}
+    const d=last?new Date(last):null;
+    st.innerHTML=c?`この端末の記録：<b>${c.bowlers}人</b>・<b>${c.throws}投</b>・<b>${c.games}ゲーム</b><br>最後のバックアップ：${d?`${d.getMonth()+1}月${d.getDate()}日`:'まだありません'}`:'この端末にはまだ記録がありません。';};
+  try{const rq=indexedDB.open('bowlinglabo',1);
+    rq.onupgradeneeded=()=>{rq.result.createObjectStore('docs',{keyPath:'path'});};
+    rq.onsuccess=()=>{const db=rq.result,tx=db.transaction('docs','readonly'),g=tx.objectStore('docs').getAllKeys();
+      g.onsuccess=()=>{const c={bowlers:0,throws:0,games:0};for(const k of g.result||[]){const p=String(k).split('/');if(p.length===2&&c[p[0]]!=null)c[p[0]]++;}show(c.bowlers+c.throws+c.games?c:null);};
+      g.onerror=()=>show(null);};
+    rq.onerror=()=>{st.textContent='この端末のブラウザでは記録を保存できない設定になっています（プライベートブラウズなど）。';};
+  }catch(_){show(null);}
+})();
+</script>
+</body>
+</html>
