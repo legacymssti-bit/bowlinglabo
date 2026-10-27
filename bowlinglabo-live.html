@@ -349,6 +349,11 @@ body{padding:0}
   #goPlay{padding:8px;font-size:14px}
   .dash.setup .dmsg{-webkit-line-clamp:2;font-size:10.5px}
 }
+.rotateHint{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;gap:4px;text-align:center;
+  background:color-mix(in srgb,var(--surface) 92%,transparent);color:var(--ink);border-radius:12px;padding:12px 16px;font-size:13px;max-width:86%;pointer-events:none}
+.rotateHint b{font-size:16px}.rotateHint span{font-size:11.5px;color:var(--muted)}
+@media (orientation:portrait) and (pointer:coarse){.dash.setup .rotateHint{display:flex}}
+.camtag .badge.warn{background:var(--warn);color:#fff}
 @media (orientation:portrait){.dash .stage{height:auto}#view{width:100%;height:auto}.d-stats{grid-column:1;grid-row:2}.d-lane{grid-row:2}.d-score{grid-row:3}.morehint{grid-row:4}}
 </style>
 </head>
@@ -359,6 +364,7 @@ body{padding:0}
       <canvas id="view" width="640" height="360" aria-label="カメラ映像"></canvas>
       <div class="calHint" id="calHint" hidden></div>
       <div class="toast" id="toast" hidden></div>
+      <div class="rotateHint" role="note"><b>⟳ スマホを横向きにしてください</b><span>横向きのほうがレーン全体が大きく写り、計測が安定します</span></div>
       <div class="camtag"><span class="live-tag" id="liveTag">LIVE</span><span class="badge" id="camBadge">停止中</span></div>
     </div>
   </div>
@@ -1449,19 +1455,36 @@ const defHand=()=>$('#defHand').value;
 if(BL.isIOS()){const r=$('#recOn');if(r){r.checked=false;r.parentNode.lastChild.textContent=' 撮影した映像も録画する（iPhoneは長時間だと止まることがあるので初期はオフ）';}}
 
 /* ---------- camera ---------- */
+// size the work canvases to the camera picture; called again whenever the picture turns (phone rotated)
+function applyVideoSize(){
+  const w=video.videoWidth,h=video.videoHeight;if(!w||!h)return;
+  const k=Math.min(1,640/Math.max(w,h));S.vw=w;S.vh=h;S.AW=Math.round(w*k);S.AH=Math.round(h*k);
+  view.width=work.width=S.AW;view.height=work.height=S.AH;S.geoms={};
+  let fr=30;try{fr=S.cam.getVideoTracks()[0].getSettings().frameRate||30;}catch(_){}
+  $('#camBadge').textContent=`${w}×${h}・${Math.round(fr)}fps`;
+}
+function onVideoTurned(){
+  const was=S.vw>=S.vh?'land':'port';applyVideoSize();const now=S.vw>=S.vh?'land':'port';
+  if(was===now){try{prepareROI();}catch(_){}return;}
+  // the picture turned: the lane frame no longer fits, so line the lanes up again
+  if(S.running)stopGame();
+  S.cals={L:null,R:null};S.geoms={};S.sel=null;store.set('bl-live-cal',Object.assign(S.cals,{orient:S.vw>=S.vh?'land':'port'}));setMode(false);updateCal();
+  if(now==='land'){msg('スマホが横向きになったので、レーンの位置を合わせ直します。カメラを動かさないでください。');clearTimeout(S.reAuto);S.reAuto=setTimeout(()=>autoCal(false),1500);}
+  else msg('スマホを横向きにしてください。横向きにすると自動でレーンの位置を合わせます。');
+}
 async function startCamera(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg('この画面ではカメラを使えません。https:// で始まるアドレスで開いてください。',true);return;}
   try{S.cam=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:60}}});}
   catch(e){msg('カメラを起動できませんでした。ブラウザのカメラ許可を確認してください。',true);return;}
   video.srcObject=S.cam;try{await video.play();}catch(_){}
   await new Promise(r=>{if(video.videoWidth)r();else video.onloadedmetadata=()=>r();});
-  const w=video.videoWidth,h=video.videoHeight,k=Math.min(1,640/Math.max(w,h));S.AW=Math.round(w*k);S.AH=Math.round(h*k);
-  view.width=work.width=S.AW;view.height=work.height=S.AH;S.geoms={};
-  const st=S.cam.getVideoTracks()[0].getSettings();$('#camBadge').textContent=`${w}×${h}・${Math.round(st.frameRate||30)}fps`;
+  applyVideoSize();
+  // a lane setting saved while the phone was held the other way round does not fit this picture
+  const curO=video.videoWidth>=video.videoHeight?'land':'port';if((S.cals.L||S.cals.R)&&S.cals.orient&&S.cals.orient!==curO){S.cals={L:null,R:null};S.geoms={};}
   $('#camBtn').hidden=true;$('#camBtn').disabled=true;$('#calL').disabled=$('#calR').disabled=false;$('#ballBtn').disabled=false;$('#autoBtn').disabled=false;
   try{S.wake=await navigator.wakeLock.request('screen');}catch(_){}
   updateCal();requestAnimationFrame(preview);
-  if(S.cals.L||S.cals.R)msg('前回の位置合わせを使っています。ずれていれば「自動で位置合わせ」を押すか、角の丸をドラッグして直してください。');
+  if(S.cals.L||S.cals.R)msg('前回の位置合わせを使っています。ずれていれば「自動で位置合わせ」を押すか、「微調整」で直してください。');
   else setTimeout(()=>autoCal(false),800);
 }
 document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&S.cam&&!S.wake){try{S.wake=await navigator.wakeLock.request('screen');}catch(_){}}});
@@ -1501,7 +1524,7 @@ function fineUI(){
 function nudge(dx,dy){const sel=S.sel;if(!sel||!S.cals[sel.lane])return;const c=S.cals[sel.lane],old=c.pts[sel.idx].slice(),k=S.fineStep===1?.5:3;
   c.pts[sel.idx]=[Math.max(0,Math.min(1,old[0]+dx*k/S.AW)),Math.max(0,Math.min(1,old[1]+dy*k/S.AH))];delete S.geoms[sel.lane];
   if(!ensureGeom(sel.lane)){c.pts[sel.idx]=old;delete S.geoms[sel.lane];return;}
-  clearTimeout(nudge.t);nudge.t=setTimeout(()=>{store.set('bl-live-cal',S.cals);updateCal();},250);}
+  clearTimeout(nudge.t);nudge.t=setTimeout(()=>{store.set('bl-live-cal',Object.assign(S.cals,{orient:S.vw>=S.vh?'land':'port'}));updateCal();},250);}
 $('#fine').querySelectorAll('[data-fl]').forEach(b=>b.onclick=()=>{if(!S.cals[b.dataset.fl])return;S.sel={lane:b.dataset.fl,idx:S.sel?S.sel.idx:3};fineUI();});
 $('#fine').querySelectorAll('[data-fc]').forEach(b=>b.onclick=()=>{S.sel={lane:S.sel?S.sel.lane:'L',idx:+b.dataset.fc};fineUI();});
 $('#fineStep').onclick=()=>{S.fineStep=S.fineStep===1?2:1;fineUI();};
@@ -1533,7 +1556,7 @@ async function autoCal(){
   if(single){const l=defHand()==='L'?'R':'L';S.cals[l]={pts:r.L,D};}else S.cals={L:{pts:r.L,D},R:{pts:r.R,D}};
   S.geoms={};for(const l of['L','R'])if(S.cals[l]&&!ensureGeom(l))S.cals[l]=null;
   if(!S.cals.L&&!S.cals.R){msg('レーンの位置を自動で見つけられませんでした。4点で指定してください。',true);return;}
-  store.set('bl-live-cal',S.cals);updateCal();
+  store.set('bl-live-cal',Object.assign(S.cals,{orient:S.vw>=S.vh?'land':'port'}));updateCal();
   const unsure=r.conf!=='high'||single;$('#calAsk').hidden=!unsure;
     if(unsure){$('#calAskText').textContent=(single?'レーンが1本しか見つかりませんでした。':'')+'自動で合わせたレーンの位置に自信がありません。黄色の枠がレーンの端（ファウルラインとピンの手前）に合っていますか？ずれている角は「微調整」で選んで矢印で直せます。';msg('レーンの位置を確認してください。');}
   else msg('レーンの位置を自動で合わせました。ずれている角は「微調整」で選んで矢印で直し、「この位置で始める」を押してください。');
@@ -1554,11 +1577,11 @@ view.addEventListener('pointerdown',e=>{if(!cornerOk())return;const p=calPos(e),
 view.addEventListener('pointermove',e=>{if(!S.cdrag)return;e.preventDefault();const p=calPos(e);S.drag=p;S.cals[S.cdrag.lane].pts[S.cdrag.idx]=p;delete S.geoms[S.cdrag.lane];});
 view.addEventListener('pointerup',()=>{if(!S.cdrag)return;const l=S.cdrag.lane;
   if(!ensureGeom(l)){S.cals[l].pts[S.cdrag.idx]=S.cdrag.orig;delete S.geoms[l];msg('その位置では枠が正しく作れません。元に戻しました。',true);}
-  else{store.set('bl-live-cal',S.cals);msg(`${LN[l]}レーンの角を動かしました。`);}S.cdrag=null;S.drag=null;updateCal();});
+  else{store.set('bl-live-cal',Object.assign(S.cals,{orient:S.vw>=S.vh?'land':'port'}));msg(`${LN[l]}レーンの角を動かしました。`);}S.cdrag=null;S.drag=null;updateCal();});
 const startCal=l=>{if(S.running)return;$('#calAsk').hidden=true;S.calMode=true;S.calLane=l;S.calTmp=[];S.frozen=document.createElement('canvas');S.frozen.width=S.AW;S.frozen.height=S.AH;
   S.frozen.getContext('2d').drawImage(video,0,0,S.AW,S.AH);updateCal();};
 $('#calL').onclick=()=>startCal('L');$('#calR').onclick=()=>startCal('R');
-$('#calDist').onchange=()=>{const D=+$('#calDist').value;for(const l of['L','R'])if(S.cals[l])S.cals[l].D=D;S.geoms={};store.set('bl-live-cal',S.cals);updateCal();};
+$('#calDist').onchange=()=>{const D=+$('#calDist').value;for(const l of['L','R'])if(S.cals[l])S.cals[l].D=D;S.geoms={};store.set('bl-live-cal',Object.assign(S.cals,{orient:S.vw>=S.vh?'land':'port'}));updateCal();};
 const calPos=e=>{const r=view.getBoundingClientRect();return[Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];};
 view.addEventListener('pointerdown',e=>{if(!S.calMode)return;e.preventDefault();try{view.setPointerCapture(e.pointerId);}catch(_){}S.drag=calPos(e);});
 view.addEventListener('pointermove',e=>{if(!S.calMode||!S.drag)return;e.preventDefault();S.drag=calPos(e);});
@@ -1566,11 +1589,12 @@ view.addEventListener('pointercancel',()=>{S.drag=null;});
 view.addEventListener('pointerup',e=>{if(!S.calMode||!S.drag)return;S.drag=null;S.calTmp.push(calPos(e));
   if(S.calTmp.length===4){const l=S.calLane;S.cals[l]={pts:S.calTmp.slice(),D:+$('#calDist').value};S.calMode=false;S.frozen=null;delete S.geoms[l];
     if(!ensureGeom(l)){S.cals[l]=null;msg('4点の並びが正しくありません。左下→右下→右上→左上の順でもう一度指定してください。',true);}
-    else{store.set('bl-live-cal',S.cals);msg(`${LN[l]}レーンを設定しました。`+(S.cals[l==='L'?'R':'L']?'「ゲーム開始」で計測を始めます。':`${LN[l==='L'?'R':'L']}レーンも指定してください（片方だけでも始められます）。`));}}
+    else{store.set('bl-live-cal',Object.assign(S.cals,{orient:S.vw>=S.vh?'land':'port'}));msg(`${LN[l]}レーンを設定しました。`+(S.cals[l==='L'?'R':'L']?'「ゲーム開始」で計測を始めます。':`${LN[l==='L'?'R':'L']}レーンも指定してください（片方だけでも始められます）。`));}}
   updateCal();});
 
 /* ---------- preview ---------- */
 function preview(){
+  if(S.cam&&video.videoWidth&&(video.videoWidth!==S.vw||video.videoHeight!==S.vh))onVideoTurned();
   const{AW,AH}=S,c=vctx;if(S.frozen)c.drawImage(S.frozen,0,0);else if(video.readyState>=2)c.drawImage(video,0,0,AW,AH);
   for(const l of['L','R']){const g=S.calMode&&S.calLane===l?null:ensureGeom(l);if(!g)continue;
     const P=(u,v)=>{const p=BL.applyH(g.Hl,u,v);return[p[0],p[1]]},seg=(a,b,cc,dd)=>{const p=P(a,b),q=P(cc,dd);c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);};
@@ -1635,7 +1659,7 @@ function onFrame(now){
   const d=grabA();
   for(const l in S.streams){const fresh=S.streams[l].push(d,t);for(const ev of fresh)onThrow(ev,l);}
   S.frames++;S.fpsWin.push(t);while(S.fpsWin.length&&S.fpsWin[0]<t-2)S.fpsWin.shift();
-  if(S.frames%15===0){const fps=S.fpsWin.length/2;$('#stat').textContent=`解析 ${fps.toFixed(0)}コマ/秒 ・ 経過 ${fmtT(t)} ・ ${GM.evs.length}投`;
+  if(S.frames%15===0){const fps=S.fpsWin.length/2;$('#camBadge').textContent=`解析 ${fps.toFixed(0)}コマ/秒・${GM.evs.length}投`;$('#camBadge').classList.toggle('warn',fps<15&&t>5);$('#stat').textContent=`解析 ${fps.toFixed(0)}コマ/秒 ・ 経過 ${fmtT(t)} ・ ${GM.evs.length}投`;
     // below ~15 analysed frames a second, balls slip through: lighten the work (smaller zoom area) after a few seconds of it
     S.slowSec=fps<15&&t>5?(S.slowSec||0)+.5:0;
     if(S.slowSec>=6&&roiBudget>150000){roiBudget=Math.round(roiBudget*.65);S.slowSec=0;restartStreams();
@@ -1649,14 +1673,17 @@ function onThrow(ev,lane){
   GM.evs.push(ev);S.lastId=ev.id;rebuild();toast(`${LN[lane]}レーンで投球を検出`);autoSaveSoon(4000);
 }
 function stopGame(){
-  S.running=false;clearInterval(S.rebuildTimer);
+  S.running=false;clearInterval(S.rebuildTimer);$('#camBadge').classList.remove('warn');try{applyVideoSize();}catch(_){}
   if(S.rec&&S.rec.state!=='inactive'){S.rec.onstop=()=>{S.recBlob=new Blob(S.chunks,{type:S.rec.mimeType||'video/webm'});const b=$('#recBtn');b.hidden=false;
       b.textContent=`録画を保存（${(S.recBlob.size/1048576).toFixed(0)} MB）`;};S.rec.stop();}
   $('#runBtn').textContent='ゲーム開始';$('#liveTag').classList.remove('on');$('#calL').disabled=$('#calR').disabled=$('#autoBtn').disabled=false;
   rebuild();rememberPeople();$('#exportBtn').disabled=$('#saveLocal').disabled=!GM.evs.length;if(GM.evs.length)autoSave(true);else msg('ゲームを終了しました（投球がなかったので保存はしていません）。');
 }
 $('#runBtn').onclick=()=>{if(S.running)stopGame();else startGame();};
-$('#camBtn').onclick=startCamera;
+$('#camBtn').onclick=async()=>{
+  if(!BL.isIOS()){try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(_){}
+    try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');}catch(_){}}
+  startCamera();};
 
 /* ---------- game ---------- */
 function resolveName(p){const nm=GM.opts.names[p.key];if(nm)return nm;
